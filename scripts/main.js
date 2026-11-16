@@ -52,6 +52,9 @@ function getSplitCost(item) {
   if (cost > 0 && key) out[key] = cost;
   return out;
 }
+function isPassive(item) {
+  return item?.type === "ability" && !!item.flags?.[MODULE_ID]?.passive;
+}
 function isSplitCost(item) {
   if (item.type !== "ability") return false;
   const s = getSplitCost(item);
@@ -236,6 +239,19 @@ Hooks.on("renderItemSheet", (app, html) => {
   const costInput = $html.find('input[name="system.basic.cost"]');
   if (!costInput.length) return;
 
+  // Passive checkbox
+  const passiveBox = $(`
+    <label class="ad-passive-toggle" title="${game.i18n.localize("AWAKENED.PassiveHint")}">
+      <input type="checkbox" data-ad-passive ${isPassive(item) ? "checked" : ""} ${app.isEditable === false ? "disabled" : ""} />
+      <span>${game.i18n.localize("AWAKENED.Passive")}</span>
+    </label>`);
+  costInput.closest(".resources").after(passiveBox);
+  passiveBox.find("input").on("change", ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    item.update({[`flags.${MODULE_ID}.passive`]: ev.currentTarget.checked});
+  });
+
   // Abilities that cost XP or "any pool" keep the system's original fields.
   const hasFlag = !!item.flags?.[MODULE_ID]?.splitCost;
   const pool = item.system.basic.pool;
@@ -397,7 +413,21 @@ Hooks.once("setup", () => {
     /** @override */
     async getData() {
       const data = await super.getData();
+      // Passive abilities move out of the ability categories into their own folding section.
+      const passives = [];
+      for (const key of ["abilities", "abilitiesTwo", "abilitiesThree", "abilitiesFour"]) {
+        const list = data.itemLists?.[key];
+        if (!Array.isArray(list)) continue;
+        data.itemLists[key] = list.filter(i => {
+          const doc = this.actor.items.get(i._id ?? i.id);
+          if (doc && isPassive(doc)) { passives.push(i); return false; }
+          return true;
+        });
+      }
       data.ad = buildSheetData(this.actor, data);
+      data.ad.passiveLists = {abilities: passives};
+      data.ad.passiveCount = passives.length;
+      data.ad.passivesOpen = !!game.user.getFlag(MODULE_ID, "passivesOpen")?.[this.actor.id];
       return data;
     }
 
@@ -448,7 +478,7 @@ Hooks.once("setup", () => {
       const stack = getFlags(actor).stack ?? [];
       html.find("li.item[data-item-id]").each((_, li) => {
         const item = actor.items.get(li.dataset.itemId);
-        if (!item || item.type !== "ability") return;
+        if (!item || item.type !== "ability" || isPassive(item)) return;
         const on = stack.includes(item.id);
         const btn = $(`<a class="item-control ad-stack-toggle ${on ? "on" : ""}" title="${game.i18n.localize(on ? "AWAKENED.StackRemove" : "AWAKENED.StackAdd")}"><i class="fa-solid fa-layer-group"></i></a>`);
         $(li).find(".item-controls").first().prepend(btn);
@@ -467,6 +497,25 @@ Hooks.once("setup", () => {
           }
           actor.update(update);
         });
+      });
+
+      // Passive abilities: nothing to pay, so no pay button.
+      html.find(".ad-passive-list li.item[data-item-id] .item-pay").remove();
+
+      // Count badge on each ability category heading (active abilities only).
+      html.find(".tab.abilities ol.items-list:not(.ad-passive-list)").each((_, ol) => {
+        if (!/^Ability/.test(ol.id || "")) return;
+        const count = $(ol).children("li.item[data-item-id]").length;
+        $(ol).find("> li.item-header .item-name").first().append(` <span class="ad-count-badge">${count}</span>`);
+      });
+
+      // Remember, per user and per character, whether the passive section is open.
+      html.find("details.ad-passives").on("toggle", ev => {
+        const open = ev.currentTarget.open;
+        const current = foundry.utils.deepClone(game.user.getFlag(MODULE_ID, "passivesOpen") ?? {});
+        if (!!current[actor.id] === open) return;
+        current[actor.id] = open;
+        game.user.setFlag(MODULE_ID, "passivesOpen", current);
       });
 
       if (!this.options.editable) return;

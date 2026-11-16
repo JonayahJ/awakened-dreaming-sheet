@@ -1196,3 +1196,29 @@
 .cyphersystem.awakened-dreaming .ad-pools > .ad-pool,
 .cyphersystem.awakened-dreaming .ad-status > * { width: auto; min-width: 0; }
 .cyphersystem.awakened-dreaming .ad-identity-main { align-items: stretch; }
+
+/* ---------- Passive abilities (folding section) and count badges ---------- */
+.awakened-dreaming .ad-count-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px;
+  border-radius: 10px; background: var(--ad-night-2); color: var(--ad-gold-light);
+  font-family: var(--ad-caps); font-weight: 700; font-size: 11px; letter-spacing: 0; vertical-align: middle; text-indent: 0;
+}
+.awakened-dreaming .ad-passives { margin: 4px 4px 12px; border: 1px solid var(--ad-gold-faint); border-left: 3px solid var(--ad-night-2); border-radius: 3px; background: rgba(44, 36, 87, 0.04); }
+.awakened-dreaming .ad-passives-head { display: flex; align-items: center; gap: 10px; padding: 7px 10px; cursor: pointer; list-style: none; }
+.awakened-dreaming .ad-passives-head::-webkit-details-marker { display: none; }
+.awakened-dreaming .ad-passives-head::marker { content: ""; }
+.awakened-dreaming .ad-passives-head .ad-count-badge { margin-left: 0; }
+.awakened-dreaming .ad-chev { color: var(--ad-gold); font-size: 11px; transition: transform 150ms ease; }
+.awakened-dreaming .ad-passives[open] .ad-chev { transform: rotate(90deg); }
+.awakened-dreaming .ad-passives-title { font-family: var(--ad-caps); font-weight: 700; font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ad-night-2); }
+.awakened-dreaming .ad-passives-hint { margin-left: auto; font-style: italic; font-size: 13px; color: var(--ad-ink-soft); }
+.cyphersystem.awakened-dreaming .ad-passive-list { margin: 0 0 6px; }
+
+/* Passive checkbox in the ability window */
+.ad-passive-toggle {
+  display: inline-flex; align-items: center; gap: 6px; margin: 6px 0 2px;
+  font-family: "AD Cinzel", "Cinzel", Georgia, serif; font-weight: 700; font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: #2c2457; cursor: pointer;
+}
+.ad-passive-toggle input { accent-color: #2c2457; width: 15px; height: 15px; margin: 0; }

@@ -109,5 +109,9 @@
   "AWAKENED.XPCovered": "{xp} XP covered the missing {short}.",
   "AWAKENED.StackXP": "Not enough in a pool. Paying will drop it to 0 and spend",
   "AWAKENED.StackShort": "Not enough points in a pool to pay for this.",
-  "AWAKENED.DieFlavor": "Rolls a {die}"
+  "AWAKENED.DieFlavor": "Rolls a {die}",
+  "AWAKENED.Passive": "Passive ability",
+  "AWAKENED.PassiveHint": "Passive abilities are always on. They're listed in their own folding section on the Abilities tab, with no pay button.",
+  "AWAKENED.PassiveAbilities": "Passive abilities",
+  "AWAKENED.PassiveSummary": "Always on, nothing to pay"
 }

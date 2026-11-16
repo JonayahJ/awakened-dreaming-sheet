@@ -139,6 +139,19 @@
         {{/if}}
       {{/unless}}
       {{> systems/cyphersystem/templates/tabs/abilities-tab/abilities.html}}
+      {{#if ad.passiveCount}}
+        <details class="ad-passives" {{#if ad.passivesOpen}}open{{/if}}>
+          <summary class="ad-passives-head">
+            <i class="fas fa-chevron-right ad-chev"></i>
+            <span class="ad-passives-title">{{localize 'AWAKENED.PassiveAbilities'}}</span>
+            <span class="ad-count-badge">{{ad.passiveCount}}</span>
+            <span class="ad-passives-hint">{{localize 'AWAKENED.PassiveSummary'}}</span>
+          </summary>
+          <ol class="items-list ad-passive-list">
+            {{> systems/cyphersystem/templates/item-lists/abilities-list-01.html itemLists=ad.passiveLists}}
+          </ol>
+        </details>
+      {{/if}}
       {{> systems/cyphersystem/templates/tabs/abilities-tab/spells.html}}
     </div>
 
