@@ -400,7 +400,7 @@ Hooks.once("setup", () => {
     static get defaultOptions() {
       return foundry.utils.mergeObject(super.defaultOptions, {
         classes: ["cyphersystem", "sheet", "actor", "pc", "awakened-dreaming"],
-        template: `${TEMPLATE_ROOT}/ad-pc-sheet.hbs?v=${moduleVersion()}`,
+        template: `${TEMPLATE_ROOT}/ad-pc-sheet.hbs`,
         width: 780,
         height: 960
       });
@@ -602,15 +602,20 @@ Hooks.once("setup", () => {
     label: "AWAKENED.SheetLabel"
   });
 
-  // Fetch the partials with the version in the URL (so they are never stale) and register them
-  // under their plain paths, which is how the sheet template refers to them.
-  for (const name of ["ad-header.hbs", "ad-awakening.hbs"]) {
-    fetch(`${TEMPLATE_ROOT}/${name}?v=${moduleVersion()}`)
-      .then(r => r.text())
-      .then(text => Handlebars.registerPartial(`${TEMPLATE_ROOT}/${name}`, text))
-      .catch(err => console.error(`${MODULE_ID} | could not load ${name}`, err));
+  // Fetch the templates with the version in the URL (so browsers never reuse an old copy),
+  // compile them and register them under their plain paths. Foundry's template loader uses an
+  // already-registered template instead of fetching it again; if a fetch fails, Foundry simply
+  // loads the plain path itself.
+  for (const name of ["ad-pc-sheet.hbs", "ad-header.hbs", "ad-awakening.hbs"]) {
+    const path = `${TEMPLATE_ROOT}/${name}`;
+    fetch(`${path}?v=${moduleVersion()}`)
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(text => Handlebars.registerPartial(path, Handlebars.compile(text)))
+      .catch(err => {
+        console.warn(`${MODULE_ID} | versioned load of ${name} failed, using the normal path`, err);
+        foundry.applications.handlebars.loadTemplates([path]);
+      });
   }
-  foundry.applications.handlebars.loadTemplates([`${TEMPLATE_ROOT}/ad-pc-sheet.hbs?v=${moduleVersion()}`]);
 
   game.modules.get(MODULE_ID).api = {AwakenedDreamingPCSheet};
 });
