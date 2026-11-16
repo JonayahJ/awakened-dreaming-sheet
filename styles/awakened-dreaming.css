@@ -1222,3 +1222,6 @@
   letter-spacing: 0.12em; text-transform: uppercase; color: #2c2457; cursor: pointer;
 }
 .ad-passive-toggle input { accent-color: #2c2457; width: 15px; height: 15px; margin: 0; }
+
+/* 1.8.1: keep all row buttons (stack, pay, edit, archive) on one line */
+.cyphersystem.awakened-dreaming .items-list .item-controls { flex: 0 0 auto; min-width: 5em; white-space: nowrap; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
