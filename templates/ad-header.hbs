@@ -1,0 +1,227 @@
+{{!-- ===================== IDENTITY ===================== --}}
+<div class="ad-identity">
+
+  <div class="ad-portrait profile-img-container">
+    <div class="ad-portrait-frame">
+      <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
+    </div>
+    {{#if sheetSettings.isExclusiveTagActive}}
+      <div class="profile-img-overlay">
+        <a class="profile-img-overlay-exclusive-tag" title="{{localize 'CYPHERSYSTEM.ExclusiveTag'}}: {{sheetSettings.isExclusiveTagActive}}"><i class="fa-item fas fa-exclamation"></i><i class="fa-item fas fa-hashtag"></i></a>
+      </div>
+    {{/if}}
+    {{#if sheetSettings.disabledStaticStats}}
+      <div class="profile-img-overlay-lock"><i class="fa-item fas fa-lock"></i></div>
+    {{/if}}
+    {{#if sheetSettings.multiRollActive}}
+      <div class="profile-img-overlay-multi-roll">
+        <a class="disable-multi-roll" title="{{localize 'CYPHERSYSTEM.MultiRollInProgress'}}"><i class="fa-item fas fa-dice"></i></a>
+      </div>
+    {{/if}}
+  </div>
+
+  <div class="ad-identity-main">
+    <div class="ad-name-row">
+      <input class="ad-name" name="name" type="text" value="{{actor.name}}" placeholder="{{localize 'CYPHERSYSTEM.Name'}}" />
+      {{#if (eq actor.system.settings.general.gameMode "Unmasked")}}
+        <select class="ad-form-select" name="system.basic.unmaskedForm">
+          {{selectOptions unmaskedFormChoices selected=actor.system.basic.unmaskedForm localize=true}}
+        </select>
+      {{/if}}
+    </div>
+
+    <div class="ad-sentence">
+      <span class="ad-word">{{localize 'AWAKENED.Is'}}</span>
+      <label class="ad-blank">
+        <input name="system.basic.descriptor" type="text" value="{{actor.system.basic.descriptor}}" />
+        <span class="ad-caption">{{localize 'AWAKENED.Descriptor'}}</span>
+      </label>
+      <label class="ad-blank">
+        <input name="system.basic.type" type="text" value="{{actor.system.basic.type}}" />
+        <span class="ad-caption">{{localize 'AWAKENED.Type'}}</span>
+      </label>
+      <span class="ad-word">{{localize 'AWAKENED.Who'}}</span>
+      <label class="ad-blank ad-blank-wide">
+        <input name="system.basic.focus" type="text" value="{{actor.system.basic.focus}}" {{#if ad.isStrange}}disabled{{/if}} />
+        <span class="ad-caption">{{localize 'AWAKENED.Focus'}}</span>
+      </label>
+      {{#if ad.additionalSentence}}
+        <label class="ad-blank ad-blank-wide">
+          <input name="system.basic.additionalSentence" type="text" value="{{ad.additionalSentence.value}}" {{#if ad.isStrange}}disabled{{/if}} />
+          <span class="ad-caption">{{ad.additionalSentence.label}}</span>
+        </label>
+      {{/if}}
+    </div>
+
+    {{#unless sheetSettings.isLimited}}
+      <div class="ad-aura-line">
+        {{#if ad.awakening.unawakened}}
+          <span class="ad-aura-chip ad-unawakened"><i class="fa-solid fa-moon"></i> {{localize 'AWAKENED.Unawakened'}}</span>
+        {{else}}
+          <span class="ad-aura-chip" title="{{localize 'AWAKENED.Aura'}}: {{ad.awakening.auraSummary}}"><i class="fa-solid fa-sun-haze"></i> <em>{{#if (gt ad.awakening.count 1)}}{{localize 'AWAKENED.Auras'}}{{else}}{{localize 'AWAKENED.Aura'}}{{/if}}</em> {{#if ad.awakening.auraSummary}}{{ad.awakening.auraSummary}}{{else}}—{{/if}}</span>
+          <span class="ad-aura-chip ad-bleed-chip" title="{{localize 'AWAKENED.BleedThrough'}}: {{ad.awakening.bleedSummary}}"><i class="fa-solid fa-droplet"></i> <em>{{localize 'AWAKENED.BleedThrough'}}</em> {{#if ad.awakening.bleedSummary}}{{ad.awakening.bleedSummary}}{{else}}—{{/if}}</span>
+        {{/if}}
+      </div>
+      <div class="ad-advancement">
+        <span class="ad-mini-title">{{localize 'AWAKENED.Advancement'}}</span>
+        {{#each ad.advancement}}
+          <label class="ad-adv">
+            <input type="checkbox" name="system.basic.advancement.{{key}}" {{checked checked}} {{@root.sheetSettings.disabledStaticStats}} />
+            <span>{{label}}</span>
+          </label>
+        {{/each}}
+        <a class="item-control reset-advancement ad-icon-btn" title="{{localize 'AWAKENED.ResetAdvancement'}}"><i class="fas fa-rotate"></i></a>
+      </div>
+    {{/unless}}
+    {{#unless sheetSettings.isLimited}}
+      <div class="ad-badges">
+        <div class="ad-badge ad-badge-tier" title="{{localize 'AWAKENED.Tier'}}">
+          <input class="ad-select-on-focus" type="number" name="system.basic.tier" value="{{actor.system.basic.tier}}" {{sheetSettings.disabledStaticStats}} />
+          <span class="ad-badge-label">{{localize 'AWAKENED.Tier'}}</span>
+        </div>
+        <div class="ad-badge ad-badge-effort" title="{{localize 'AWAKENED.EffortToday'}}: {{ad.effort.remaining}} / {{ad.effort.tier}}">
+          <span class="ad-badge-value">{{ad.effort.remaining}}</span>
+          <span class="ad-badge-label">{{localize 'AWAKENED.EffortLeft'}}</span>
+        </div>
+        <div class="ad-badge ad-badge-xp" title="{{localize 'AWAKENED.XP'}}">
+          <input class="ad-select-on-focus" type="number" name="system.basic.xp" value="{{actor.system.basic.xp}}" />
+          <span class="ad-badge-label">
+            <a class="item-control decrease-xp" title="-1"><i class="fas fa-minus"></i></a>
+            {{localize 'AWAKENED.XP'}}
+            <a class="item-control increase-xp" title="+1"><i class="fas fa-plus"></i></a>
+          </span>
+        </div>
+        <div class="ad-badge ad-badge-armor" title="{{ad.armor.costLabel}}">
+          <span class="ad-badge-value">{{ad.armor.rating}}</span>
+          <span class="ad-badge-label">{{localize 'AWAKENED.Armor'}}</span>
+        </div>
+      </div>
+    {{/unless}}
+  </div>
+
+</div>
+
+{{#unless sheetSettings.isLimited}}
+  {{!-- ===================== POOLS ===================== --}}
+  <div class="ad-pools {{#if ad.additionalPool}}has-four{{/if}}">
+    {{#each ad.pools as |pool|}}
+      <div class="ad-pool stat-block ad-pool-{{pool.key}} {{#if pool.low}}is-low{{/if}} {{#if pool.empty}}is-empty{{/if}}" style="--pct: {{pool.pct}};">
+        <div class="ad-pool-head">
+          <span class="ad-pool-label"><i class="fa-solid {{pool.glyph}}"></i> {{pool.label}}</span>
+          {{#if (gte @root.sheetSettings.rollButtons 1)}}
+            <a class="item-control {{pool.rollClass}} ad-roll" title="{{pool.rollTitle}}">
+              {{#if @root.sheetSettings.useAllInOne}}<i class="fa-solid fa-ballot"></i>{{else}}<i class="fa-solid fa-dice-d20"></i>{{/if}}
+            </a>
+          {{/if}}
+        </div>
+
+        <div class="ad-ring">
+          <div class="ad-ring-inner">
+            <input class="ad-pool-value ad-select-on-focus" type="number" name="system.pools.{{pool.key}}.value" value="{{pool.value}}" />
+            <div class="ad-pool-max">
+              <span>{{localize 'AWAKENED.Of'}}</span>
+              <input class="ad-select-on-focus" type="number" name="system.pools.{{pool.key}}.max" value="{{pool.max}}" {{@root.sheetSettings.disabledStaticStats}} />
+            </div>
+          </div>
+        </div>
+
+        <div class="ad-pool-foot">
+          <div class="ad-pool-controls stat-controls {{{@root.sheetSettings.showOnHover}}}">
+            <a class="item-control decrease-{{pool.key}}" title="{{pool.sub}}"><i class="fas fa-minus"></i></a>
+            <a class="item-control increase-{{pool.key}}" title="{{pool.add}}"><i class="fas fa-plus"></i></a>
+            <a class="item-control reset-{{pool.key}}" title="{{pool.reset}}"><i class="fas fa-rotate"></i></a>
+          </div>
+          <label class="ad-edge">
+            <span>{{localize 'AWAKENED.Edge'}}</span>
+            <input class="ad-select-on-focus {{pool.multiClass}}" type="number" name="system.pools.{{pool.key}}.edge" value="{{pool.edge}}" {{@root.sheetSettings.disabledStaticStats}} />
+          </label>
+        </div>
+      </div>
+    {{/each}}
+
+    {{#if ad.additionalPool}}
+      <div class="ad-pool stat-block ad-pool-additional" style="--pct: {{ad.additionalPool.pct}};">
+        <div class="ad-pool-head">
+          <span class="ad-pool-label"><i class="fa-solid fa-moon-stars"></i> {{ad.additionalPool.label}}</span>
+        </div>
+        <div class="ad-ring">
+          <div class="ad-ring-inner">
+            <input class="ad-pool-value ad-select-on-focus" type="number" name="system.pools.additional.value" value="{{ad.additionalPool.value}}" />
+            <div class="ad-pool-max">
+              <span>{{localize 'AWAKENED.Of'}}</span>
+              <input class="ad-select-on-focus" type="number" name="system.pools.additional.max" value="{{ad.additionalPool.max}}" {{sheetSettings.disabledStaticStats}} />
+            </div>
+          </div>
+        </div>
+        <div class="ad-pool-foot">
+          <div class="ad-pool-controls stat-controls {{{sheetSettings.showOnHover}}}">
+            <a class="item-control decrease-additional" title="{{localize 'CYPHERSYSTEM.SubtractQuantity'}}"><i class="fas fa-minus"></i></a>
+            <a class="item-control increase-additional" title="{{localize 'CYPHERSYSTEM.IncreaseQuantity'}}"><i class="fas fa-plus"></i></a>
+            <a class="item-control reset-additionalPool" title="{{localize 'CYPHERSYSTEM.ResetAdditionalPool'}}"><i class="fas fa-rotate"></i></a>
+          </div>
+          {{#if ad.additionalPool.hasEdge}}
+            <label class="ad-edge">
+              <span>{{localize 'AWAKENED.Edge'}}</span>
+              <input class="ad-select-on-focus" type="number" name="system.pools.additional.edge" value="{{ad.additionalPool.edge}}" {{sheetSettings.disabledStaticStats}} />
+            </label>
+          {{/if}}
+        </div>
+      </div>
+    {{/if}}
+  </div>
+
+  {{!-- ===================== STATUS: DAMAGE TRACK + RECOVERY ===================== --}}
+  <div class="ad-status">
+    <div class="ad-track">
+      <div class="ad-mini-title">{{localize 'AWAKENED.DamageTrack'}}</div>
+      <div class="ad-track-steps">
+        {{#each ad.damage.states}}
+          <a class="ad-step ad-step-{{css}} {{#if active}}active{{/if}} {{#if passed}}passed{{/if}}" data-ad-damage="{{key}}">{{label}}</a>
+        {{/each}}
+      </div>
+      <div class="ad-track-effect">
+        {{ad.damage.effect}}
+        {{#if (eq ad.damage.state "Impaired")}}
+          <a class="item-control apply-impaired ad-apply {{#if actor.system.combat.damageTrack.applyImpaired}}on{{/if}}" title="{{localize 'CYPHERSYSTEM.ApplyStatusToRoll'}}"><i class="fas fa-check"></i></a>
+        {{/if}}
+        {{#if (eq ad.damage.state "Debilitated")}}
+          <a class="item-control apply-debilitated ad-apply {{#if actor.system.combat.damageTrack.applyDebilitated}}on{{/if}}" title="{{localize 'CYPHERSYSTEM.ApplyStatusToRoll'}}"><i class="fas fa-check"></i></a>
+        {{/if}}
+      </div>
+    </div>
+
+    <div class="ad-recovery">
+      <div class="ad-recovery-head">
+        <span class="ad-mini-title">{{localize 'AWAKENED.Recovery'}}</span>
+        <span class="ad-recovery-dice" title="{{localize 'AWAKENED.RecoveryDiceHint'}}: {{ad.recovery.formula}}">
+          <select data-ad-recovery-dice="count">
+            {{#each ad.recovery.counts}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{value}}</option>{{/each}}
+          </select>
+          <select data-ad-recovery-dice="size">
+            {{#each ad.recovery.sizes}}<option value="{{value}}" {{#if selected}}selected{{/if}}>d{{value}}</option>{{/each}}
+          </select>
+          <span class="ad-plus">+</span>
+          <input class="ad-select-on-focus" data-ad-recovery-dice="bonus" type="number" value="{{ad.recovery.bonus}}" placeholder="0" />
+        </span>
+        <a class="ad-icon-btn" data-ad-recovery-reset title="{{localize 'AWAKENED.ResetRecovery'}}"><i class="fas fa-rotate"></i></a>
+      </div>
+      <div class="ad-recovery-groups">
+        {{#each ad.recovery.kinds}}
+          <div class="ad-recovery-group {{#if exhausted}}exhausted{{/if}}">
+            <div class="ad-pips">
+              {{#each slots}}<a class="ad-pip {{#if used}}used{{/if}}" data-ad-recovery="{{key}}"></a>{{/each}}
+            </div>
+            <a class="ad-recovery-roll" data-ad-recovery-roll="{{id}}" title="{{rollTitle}}"><i class="fa-solid fa-heart"></i> {{label}}</a>
+          </div>
+        {{/each}}
+      </div>
+      <div class="ad-effort-row" title="{{localize 'AWAKENED.EffortHint'}}">
+        <span class="ad-mini-title">{{localize 'AWAKENED.EffortToday'}}</span>
+        <div class="ad-pips ad-effort-pips">
+          {{#each ad.effort.pips}}<a class="ad-pip ad-effort-pip {{#if spent}}used{{/if}}" data-ad-effort="{{index}}"></a>{{/each}}
+        </div>
+        <span class="ad-effort-count">{{ad.effort.remaining}}/{{ad.effort.tier}}</span>
+      </div>
+    </div>
+  </div>
+{{/unless}}

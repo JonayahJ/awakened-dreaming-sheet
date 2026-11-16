@@ -1,0 +1,165 @@
+<form class="ad-form flexcol" autocomplete="off">
+
+  {{!-- Dice Tray (system feature, kept) --}}
+  {{#unless (or sheetSettings.isLimited sheetSettings.isObserver)}}
+    <div class="dice-tray ad-dice-tray {{sheetSettings.diceTray}}">
+      <a class="ad-die" data-ad-die="1d4" title="d4"><i class="fa-item fa-light fa-dice-d4"></i><span>4</span></a>
+      <a class="dice-tray-d6 ad-die-sys" title="d6"><i class="fa-item fa-light fa-dice-d6"></i><span>6</span></a>
+      <a class="ad-die" data-ad-die="1d8" title="d8"><i class="fa-item fa-light fa-dice-d8"></i><span>8</span></a>
+      <a class="dice-tray-d10 ad-die-sys" title="d10"><i class="fa-item fa-light fa-dice-d10"></i><span>10</span></a>
+      <a class="ad-die" data-ad-die="1d12" title="d12"><i class="fa-item fa-light fa-dice-d12"></i><span>12</span></a>
+      <a class="dice-tray-d20 ad-die-sys" title="d20"><i class="fa-item fa-light fa-dice-d20"></i><span>20</span></a>
+      <a class="dice-tray-d100 ad-die-sys" title="d100"><i class="fa-item fa-light fa-percent"></i><span>100</span></a>
+    </div>
+  {{/unless}}
+
+  {{!-- Campaign banner --}}
+  <div class="ad-banner">
+    <span class="ad-banner-rule"></span>
+    <span class="ad-banner-star">&#10022;</span>
+    <span class="ad-banner-title">{{ad.campaignTitle}}</span>
+    <span class="ad-banner-star">&#10022;</span>
+    <span class="ad-banner-rule"></span>
+  </div>
+
+  {{!-- Sheet Header --}}
+  <header class="sheet-header ad-header">
+    {{#if ad.useCustomHeader}}
+      {{> modules/awakened-dreaming-sheet/templates/ad-header.hbs}}
+    {{else}}
+      <div class="header-fields ad-system-header">
+        {{> systems/cyphersystem/templates/headers/pc-base-info.html}}
+        {{> systems/cyphersystem/templates/headers/pc-stats.html}}
+      </div>
+    {{/if}}
+  </header>
+
+  {{!-- Sheet Tab Navigation --}}
+  <nav class="sheet-tabs tabs ad-tabs" data-group="primary">
+    {{#unless sheetSettings.isLimited}}
+      <a class="item" data-tab="awakening"><i class="fa-solid fa-moon-stars"></i> {{localize 'AWAKENED.Awakening'}}</a>
+      <a class="item" data-tab="skills"><i class="fa-solid fa-scroll"></i> {{localize 'CYPHERSYSTEM.Skills'}}</a>
+      <a class="item" data-tab="combat"><i class="fa-solid fa-swords"></i> {{localize 'CYPHERSYSTEM.Combat'}}</a>
+      <a class="item" data-tab="abilities"><i class="fa-solid fa-sparkles"></i> {{localize 'CYPHERSYSTEM.Abilities'}}</a>
+      <a class="item" data-tab="items"><i class="fa-solid fa-sack"></i> {{localize 'CYPHERSYSTEM.Equipment'}}</a>
+      <a class="item ad-tab-icon" data-tab="notes" title="{{localize 'CYPHERSYSTEM.Notes'}}"><i class="fa-regular fa-feather-pointed"></i></a>
+    {{/unless}}
+    {{#if sheetSettings.isLimited}}
+      <a class="item" data-tab="description" title="{{localize 'CYPHERSYSTEM.Description'}}">{{localize 'CYPHERSYSTEM.Description'}}</a>
+    {{else}}
+      <a class="item ad-tab-icon" data-tab="description" title="{{localize 'CYPHERSYSTEM.Description'}}"><i class="fa-regular fa-book-open"></i></a>
+    {{/if}}
+    {{#unless sheetSettings.isLimited}}
+      {{#if (eq actor.system.settings.general.gameMode "Strange")}}
+        <a class="item ad-tab-icon" data-tab="tags" title="{{localize 'CYPHERSYSTEM.Recursions'}}"><i class="fa-solid fa-at"></i></a>
+      {{else if (and actor.system.settings.general.tags.active (eq actor.system.basic.unmaskedForm "Mask"))}}
+        <a class="item ad-tab-icon" data-tab="tags" title="{{localize 'CYPHERSYSTEM.Tags'}}"><i class="fa-solid fa-hashtag"></i></a>
+      {{/if}}
+      <a class="item ad-tab-icon" data-tab="settings" title="{{localize 'CYPHERSYSTEM.Settings'}}"><i class="fa-solid fa-gear"></i></a>
+    {{/unless}}
+  </nav>
+
+  {{!-- Sheet Body: the system's own tab content, restyled by CSS --}}
+  <section class="sheet-body pc ad-body {{#if sheetSettings.isLimited}}limited{{/if}}">
+
+    <div class="tab ad-awakening-tab" data-group="primary" data-tab="awakening">
+      {{> modules/awakened-dreaming-sheet/templates/ad-awakening.hbs}}
+    </div>
+
+    <div class="tab skills" data-group="primary" data-tab="skills">
+      {{> systems/cyphersystem/templates/tabs/skills-tab/skills.html}}
+      {{> systems/cyphersystem/templates/tabs/skills-tab/power-shifts.html}}
+    </div>
+
+    <div class="tab combat" data-group="primary" data-tab="combat">
+      {{!-- Damage track and recovery live in the header (house rules) --}}
+      {{> systems/cyphersystem/templates/tabs/combat-tab/lasting-damage.html}}
+      {{> systems/cyphersystem/templates/tabs/combat-tab/attacks.html}}
+      {{> systems/cyphersystem/templates/tabs/combat-tab/ammo.html}}
+      {{> systems/cyphersystem/templates/tabs/combat-tab/armor.html}}
+    </div>
+
+    <div class="tab items" data-group="primary" data-tab="items">
+      {{> systems/cyphersystem/templates/tabs/equipment-tab/currency.html}}
+      {{> systems/cyphersystem/templates/tabs/equipment-tab/equipment.html}}
+      {{#if actor.system.settings.equipment.cyphers.active}}
+        {{> systems/cyphersystem/templates/tabs/equipment-tab/cyphers.html}}
+      {{/if}}
+      {{#if actor.system.settings.equipment.artifacts.active}}
+        {{> systems/cyphersystem/templates/tabs/equipment-tab/artifacts.html}}
+      {{/if}}
+      {{#if actor.system.settings.equipment.oddities.active}}
+        {{> systems/cyphersystem/templates/tabs/equipment-tab/oddities.html}}
+      {{/if}}
+      {{#if actor.system.settings.equipment.materials.active}}
+        {{> systems/cyphersystem/templates/tabs/equipment-tab/materials.html}}
+      {{/if}}
+    </div>
+
+    <div class="tab abilities" data-group="primary" data-tab="abilities">
+      {{#unless sheetSettings.isObserver}}
+        {{#if ad.stack.active}}
+          <div class="ad-stack {{#if ad.stack.short}}short{{/if}}">
+            <div class="ad-stack-head">
+              <span class="ad-mini-title"><i class="fa-solid fa-layer-group"></i> {{localize 'AWAKENED.StackTitle'}}</span>
+              <a class="ad-text-btn ad-fail" data-ad-stack-clear><i class="fas fa-xmark"></i> {{localize 'AWAKENED.StackClear'}}</a>
+            </div>
+            <div class="ad-stack-items">
+              {{#each ad.stack.items}}
+                <span class="ad-stack-chip {{#if unchosen}}unchosen{{/if}}">{{name}}
+                  {{#if anyPool}}
+                    <small>{{cost}}</small>
+                    <select class="ad-stack-pool" data-ad-stack-pool="{{id}}" title="{{localize 'AWAKENED.ChoosePoolShort'}}">
+                      {{#if unchosen}}<option value="" selected>{{localize 'AWAKENED.ChoosePoolShort'}}</option>{{/if}}
+                      {{#each poolOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+                    </select>
+                  {{else}}
+                    <small>{{cost}}</small>
+                  {{/if}}
+                  <a data-ad-stack-remove="{{id}}" title="{{localize 'AWAKENED.StackRemove'}}"><i class="fas fa-xmark"></i></a></span>
+              {{/each}}
+            </div>
+            <div class="ad-stack-foot">
+              <div class="ad-stack-rows">
+                {{#each ad.stack.rows}}
+                  <span class="ad-stack-row ad-stack-{{key}} {{#if short}}short{{/if}}"><b>{{label}}</b> {{total}} − {{edge}} {{localize 'AWAKENED.Edge'}} = <strong>{{net}}</strong></span>
+                {{/each}}
+              </div>
+              <a class="ad-text-btn ad-success" data-ad-stack-pay><i class="fas fa-coins"></i> {{localize 'AWAKENED.StackPay'}} {{ad.stack.payLabel}}</a>
+            </div>
+            {{#if ad.stack.short}}
+              <p class="ad-stack-warn"><i class="fa-solid fa-triangle-exclamation"></i>
+                {{#if ad.stack.xpFallback}}{{localize 'AWAKENED.StackXP'}} <strong>{{ad.stack.xpNeeded}} XP</strong>{{else}}{{localize 'AWAKENED.StackShort'}}{{/if}}
+              </p>
+            {{/if}}
+            {{#if ad.stack.skipped}}<p class="ad-hint">{{localize 'AWAKENED.StackSkippedShort'}} {{ad.stack.skipped}}</p>{{/if}}
+          </div>
+        {{else}}
+          <p class="ad-stack-tip"><i class="fa-solid fa-layer-group"></i> {{localize 'AWAKENED.StackTip'}}</p>
+        {{/if}}
+      {{/unless}}
+      {{> systems/cyphersystem/templates/tabs/abilities-tab/abilities.html}}
+      {{> systems/cyphersystem/templates/tabs/abilities-tab/spells.html}}
+    </div>
+
+    <div class="tab description ad-journal" data-group="primary" data-tab="notes">
+      {{editor enrichedHTML.notes target="system.notes" button=true engine=sheetSettings.editor owner=owner editable=true}}
+    </div>
+
+    <div class="tab description ad-journal" data-group="primary" data-tab="description">
+      {{editor enrichedHTML.description target="system.description" button=true engine=sheetSettings.editor owner=owner editable=true}}
+    </div>
+
+    <div class="tab tags" data-group="primary" data-tab="tags">
+      {{#if (eq actor.system.settings.general.gameMode "Strange")}}
+        {{> systems/cyphersystem/templates/tabs/tags-tab/recursions.html}}
+      {{/if}}
+      {{#if actor.system.settings.general.tags.active}}
+        {{> systems/cyphersystem/templates/tabs/tags-tab/tags.html}}
+      {{/if}}
+    </div>
+
+    {{> systems/cyphersystem/templates/tabs/settings-tab/settings-pc.html}}
+
+  </section>
+</form>

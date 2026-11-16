@@ -1,0 +1,138 @@
+{{!-- ===================== AWAKENINGS (aura, bleed-through, focus, tier) ===================== --}}
+<section class="ad-card ad-awakenings">
+  <header class="ad-card-head">
+    <h3><i class="fa-solid fa-eye"></i> {{localize 'AWAKENED.Awakenings'}} {{#unless ad.awakening.unawakened}}<span class="ad-count">{{ad.awakening.count}} / 6</span>{{/unless}}</h3>
+    <div class="ad-head-actions">
+      {{#unless ad.awakening.unawakened}}{{#if ad.awakening.canAdd}}
+        <a class="ad-text-btn" data-ad-awakening-add title="{{localize 'AWAKENED.AddAwakening'}}"><i class="fas fa-plus"></i> {{localize 'AWAKENED.AddAwakening'}}</a>
+      {{/if}}{{/unless}}
+      <label class="ad-toggle" title="{{localize 'AWAKENED.UnawakenedHint'}}">
+        <input type="checkbox" name="{{ad.flagPath}}.unawakened" {{checked ad.awakening.unawakened}} />
+        <span>{{localize 'AWAKENED.Unawakened'}}</span>
+      </label>
+    </div>
+  </header>
+
+  {{#if ad.awakening.unawakened}}
+    <div class="ad-fields ad-fields-static">
+      <div class="ad-field ad-field-full"><span class="ad-caption">{{localize 'AWAKENED.Aura'}}</span><div class="ad-static">{{localize 'AWAKENED.None'}}</div></div>
+      <div class="ad-field ad-field-full"><span class="ad-caption">{{localize 'AWAKENED.BleedThrough'}}</span><div class="ad-static">{{localize 'AWAKENED.None'}}</div></div>
+    </div>
+  {{else}}
+    {{#each ad.awakening.list}}
+      <div class="ad-awakening-entry">
+        <div class="ad-awk-head">
+          <span class="ad-focus-num">{{roman}}</span>
+          <h4>{{title}}</h4>
+          {{#unless first}}
+            <a class="ad-icon-btn" data-ad-awakening-remove="{{id}}" title="{{localize 'AWAKENED.RemoveAwakening'}}"><i class="fas fa-xmark"></i></a>
+          {{/unless}}
+        </div>
+        <div class="ad-awk-fields">
+          <label class="ad-field">
+            <span class="ad-caption">{{localize 'AWAKENED.Aura'}}</span>
+            <input type="text" name="{{auraName}}" value="{{aura}}" />
+          </label>
+          {{#if first}}
+            <div class="ad-field">
+              <span class="ad-caption">{{localize 'AWAKENED.Focus'}} <em class="ad-hint-inline">· {{localize 'AWAKENED.FociPrimary'}}</em></span>
+              <div class="ad-static">{{#if focus}}{{focus}}{{else}}—{{/if}}</div>
+            </div>
+            <div class="ad-field ad-awk-tier">
+              <span class="ad-caption">{{localize 'AWAKENED.Tier'}}</span>
+              <div class="ad-static">{{tier}}</div>
+            </div>
+          {{else}}
+            <label class="ad-field">
+              <span class="ad-caption">{{localize 'AWAKENED.Focus'}}</span>
+              <input type="text" name="{{focusName}}" value="{{focus}}" />
+            </label>
+            <label class="ad-field ad-awk-tier">
+              <span class="ad-caption">{{localize 'AWAKENED.Tier'}}</span>
+              <input class="ad-select-on-focus" type="number" min="1" max="6" name="{{tierName}}" value="{{tier}}" />
+            </label>
+          {{/if}}
+          <label class="ad-field ad-field-full">
+            <span class="ad-caption">{{localize 'AWAKENED.BleedThrough'}}</span>
+            <textarea name="{{bleedName}}" rows="2">{{bleedThrough}}</textarea>
+          </label>
+        </div>
+      </div>
+    {{/each}}
+    <p class="ad-hint">{{localize 'AWAKENED.AwakeningsHint'}}</p>
+  {{/if}}
+</section>
+
+{{!-- ===================== MORPHS ===================== --}}
+<section class="ad-card ad-morphs">
+  <header class="ad-card-head">
+    <h3><i class="fa-solid fa-dna"></i> {{localize 'AWAKENED.Morphs'}}</h3>
+    {{#if ad.hasAbilities}}
+      <a class="ad-text-btn" data-ad-morph-add title="{{localize 'AWAKENED.AddMorph'}}"><i class="fas fa-plus"></i> {{localize 'AWAKENED.AddMorph'}}</a>
+    {{/if}}
+  </header>
+
+  {{#unless ad.hasAbilities}}
+    <p class="ad-hint">{{localize 'AWAKENED.MorphNeedAbilities'}}</p>
+  {{/unless}}
+  {{#if ad.hasAbilities}}
+    {{#unless ad.morphs.length}}
+      <p class="ad-empty">{{localize 'AWAKENED.NoMorphs'}}</p>
+    {{/unless}}
+  {{/if}}
+
+  {{#each ad.morphs}}
+    <div class="ad-morph {{#if done}}done{{/if}}">
+      <div class="ad-morph-top">
+        <label class="ad-field ad-morph-ability">
+          <span class="ad-caption">{{localize 'AWAKENED.MorphAbility'}}</span>
+          <select name="{{@root.ad.flagPath}}.morphs.{{id}}.abilityId">
+            {{#unless abilityId}}<option value="" selected>—</option>{{/unless}}
+            {{#each abilityOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>{{/each}}
+          </select>
+        </label>
+        <label class="ad-field ad-morph-change">
+          <span class="ad-caption">{{localize 'AWAKENED.MorphChange'}}</span>
+          <input type="text" name="{{@root.ad.flagPath}}.morphs.{{id}}.change" value="{{change}}" />
+        </label>
+        <a class="ad-icon-btn" data-ad-morph-remove="{{id}}" title="{{localize 'AWAKENED.MorphRemove'}}"><i class="fas fa-xmark"></i></a>
+      </div>
+
+      <div class="ad-morph-stats">
+        <div class="ad-morph-stat">
+          <span class="ad-caption">{{localize 'AWAKENED.MorphCost'}}</span>
+          <span class="ad-morph-value">
+            {{#if cost}}{{cost}}{{else}}—{{/if}}
+            {{#if newCost}}<i class="fas fa-arrow-right-long"></i> <strong>{{newCost}}</strong>{{/if}}
+            {{#if pool}}<small>{{pool}}</small>{{/if}}
+          </span>
+        </div>
+        <div class="ad-morph-stat">
+          <span class="ad-caption">{{localize 'AWAKENED.MorphSuccess'}}</span>
+          <span class="ad-morph-pips">{{#each pips}}<span class="ad-morph-pip {{#if hit}}hit{{/if}}"></span>{{/each}}</span>
+        </div>
+        <div class="ad-morph-stat">
+          <span class="ad-caption">{{localize 'AWAKENED.MorphNextDifficulty'}}</span>
+          <span class="ad-morph-value">{{#if done}}—{{else}}{{difficulty}}{{/if}}</span>
+        </div>
+        <div class="ad-morph-stat">
+          <span class="ad-caption">{{localize 'AWAKENED.MorphAttempts'}}</span>
+          <span class="ad-morph-value">{{attempts}}</span>
+        </div>
+        <div class="ad-morph-stat">
+          <span class="ad-caption">{{localize 'AWAKENED.MorphXP'}}</span>
+          <span class="ad-morph-value">{{xpSpent}}</span>
+        </div>
+        <div class="ad-morph-actions">
+          {{#if done}}
+            <span class="ad-morph-done"><i class="fas fa-check"></i> {{localize 'AWAKENED.MorphDone'}}</span>
+          {{else}}
+            <a class="ad-text-btn ad-success" data-ad-morph-success="{{id}}" title="{{localize 'AWAKENED.MorphLogSuccess'}}"><i class="fas fa-check"></i> {{localize 'AWAKENED.MorphSuccess'}}</a>
+            <a class="ad-text-btn ad-fail" data-ad-morph-fail="{{id}}" title="{{localize 'AWAKENED.MorphLogFail'}}"><i class="fas fa-xmark"></i> {{localize 'AWAKENED.MorphFail'}}</a>
+          {{/if}}
+        </div>
+      </div>
+    </div>
+  {{/each}}
+  <p class="ad-hint">{{localize 'AWAKENED.MorphsHint'}}</p>
+</section>
