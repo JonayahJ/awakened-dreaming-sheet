@@ -1225,3 +1225,7 @@
 
 /* 1.8.1: keep all row buttons (stack, pay, edit, archive) on one line */
 .cyphersystem.awakened-dreaming .items-list .item-controls { flex: 0 0 auto; min-width: 5em; white-space: nowrap; display: flex; justify-content: flex-end; align-items: center; gap: 4px; }
+
+/* "Player picks one pool" checkbox in the ability window */
+.ad-split-cost-editor .ad-choose-toggle { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; font-weight: 600; color: #2c2457; cursor: pointer; }
+.ad-split-cost-editor .ad-choose-toggle input { accent-color: #2c2457; width: 14px; height: 14px; margin: 0; }

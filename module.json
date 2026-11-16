@@ -2,7 +2,7 @@
   "id": "awakened-dreaming-sheet",
   "title": "Awakened Dreaming — Character Sheet",
   "description": "A homebrew character sheet for the Awakened Dreaming campaign, built on the Cypher System for Foundry VTT. It follows one table's house rules (recovery, Effort, Awakenings, morphs, Bulans, split and stacked ability costs) rather than the published Cypher System rules.",
-  "version": "1.8.1",
+  "version": "1.9.0",
   "authors": [
     {
       "name": "Jo"
@@ -38,7 +38,7 @@
   ],
   "url": "https://github.com/JonayahJ/awakened-dreaming-sheet",
   "manifest": "https://github.com/JonayahJ/awakened-dreaming-sheet/releases/latest/download/module.json",
-  "download": "https://github.com/JonayahJ/awakened-dreaming-sheet/releases/download/v1.8.1/module.zip",
+  "download": "https://github.com/JonayahJ/awakened-dreaming-sheet/releases/download/v1.9.0/module.zip",
   "readme": "https://github.com/JonayahJ/awakened-dreaming-sheet#readme",
   "bugs": "https://github.com/JonayahJ/awakened-dreaming-sheet/issues"
 }

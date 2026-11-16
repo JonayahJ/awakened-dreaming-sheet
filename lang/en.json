@@ -113,5 +113,10 @@
   "AWAKENED.Passive": "Passive ability",
   "AWAKENED.PassiveHint": "Passive abilities are always on. They're listed in their own folding section on the Abilities tab, with no pay button.",
   "AWAKENED.PassiveAbilities": "Passive abilities",
-  "AWAKENED.PassiveSummary": "Always on, nothing to pay"
+  "AWAKENED.PassiveSummary": "Always on, nothing to pay",
+  "AWAKENED.Or": "or",
+  "AWAKENED.ChooseOneToggle": "Player picks one of these pools",
+  "AWAKENED.ChooseOneHint": "These are alternatives: when the ability is used, the player picks ONE of the pools above and pays only that pool's cost. Leave a pool at 0 if it isn't an option.",
+  "AWAKENED.ChooseOneText": "{name} costs {options}. Which pool are you paying from?",
+  "AWAKENED.ChoicePayTitle": "Pay {cost} (you'll pick the pool)"
 }
