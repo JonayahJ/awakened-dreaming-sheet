@@ -1244,3 +1244,9 @@
 .awakened-dreaming .ad-npc-toggle { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; padding: 1px 10px; border: 1px solid var(--ad-gold-faint); border-radius: 12px; font-family: var(--ad-caps); font-weight: 700; font-size: 10px; letter-spacing: 0.12em; color: var(--ad-ink-soft); cursor: pointer; }
 .cyphersystem.awakened-dreaming .ad-npc-toggle input { accent-color: var(--ad-crimson); margin: 0; width: 13px; height: 13px; }
 .awakened-dreaming .ad-npc-toggle.on { background: var(--ad-crimson); border-color: var(--ad-crimson); color: #fbf3df; }
+
+/* 1.10.1: portrait frame runs from the top of the name to the points of the Tier/Effort/XP/Armor shields */
+.awakened-dreaming .ad-identity { align-items: stretch; }
+.cyphersystem.awakened-dreaming .ad-portrait.profile-img-container { height: auto; min-height: 236px; align-self: stretch; display: flex; }
+.awakened-dreaming .ad-portrait-frame { height: auto; flex: 1 1 auto; }
+.cyphersystem.awakened-dreaming .ad-portrait-frame img.profile-img { height: 100%; }
