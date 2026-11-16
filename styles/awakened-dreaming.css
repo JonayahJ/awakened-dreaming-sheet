@@ -1189,3 +1189,10 @@
 .awakened-dreaming .ad-identity-main .ad-badge::before { filter: drop-shadow(0 2px 3px rgba(43, 29, 19, 0.3)); }
 
 .cyphersystem.awakened-dreaming .dice-tray.ad-dice-tray.hidden { display: none !important; }
+
+/* 1.7.1: Foundry's core .sheet-header centers its children; make every header row span the full width. */
+.cyphersystem.awakened-dreaming .sheet-header.ad-header { align-items: stretch; justify-content: flex-start; }
+.cyphersystem.awakened-dreaming .sheet-header.ad-header > * { width: 100%; flex: 0 0 auto; margin-left: 0; margin-right: 0; }
+.cyphersystem.awakened-dreaming .ad-pools > .ad-pool,
+.cyphersystem.awakened-dreaming .ad-status > * { width: auto; min-width: 0; }
+.cyphersystem.awakened-dreaming .ad-identity-main { align-items: stretch; }
