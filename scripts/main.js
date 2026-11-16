@@ -75,9 +75,10 @@ function splitCostLabel(split) {
   return SPLIT_POOLS.filter(k => split[k] > 0)
     .map(k => `${split[k]} ${game.i18n.localize(`CYPHERSYSTEM.${POOL_NAME[k]}`)}`).join(", ");
 }
-async function setSplitCost(item, split) {
+async function setSplitCost(item, split, choose) {
   const used = SPLIT_POOLS.filter(k => split[k] > 0);
   const update = {[`flags.${MODULE_ID}.splitCost`]: split};
+  if (choose !== undefined) update[`flags.${MODULE_ID}.choosePool`] = !!choose;
   if (used.length === 1) {
     update["system.basic.cost"] = String(split[used[0]]);
     update["system.basic.pool"] = POOL_NAME[used[0]];
@@ -294,12 +295,19 @@ Hooks.on("renderItemSheet", (app, html) => {
     item.update({[`flags.${MODULE_ID}.passive`]: ev.currentTarget.checked});
   });
 
-  // Abilities that cost XP or "any pool" keep the system's original fields.
+  // Abilities that cost XP keep the system's original fields.
   const hasFlag = !!item.flags?.[MODULE_ID]?.splitCost;
   const pool = item.system.basic.pool;
-  if (!hasFlag && ["XP", "Pool"].includes(pool) && (parseInt(item.system.basic.cost) || 0) > 0) return;
+  const rawCost = parseInt(item.system.basic.cost) || 0;
+  if (!hasFlag && pool === "XP" && rawCost > 0) return;
 
+  // An old "Any Pool" ability opens as "player picks one of these pools" with the same cost in each.
   const split = getSplitCost(item);
+  let chooseOn = !!item.flags?.[MODULE_ID]?.choosePool;
+  if (!hasFlag && pool === "Pool" && rawCost > 0) {
+    for (const k of SPLIT_POOLS) split[k] = rawCost;
+    chooseOn = true;
+  }
   const disabled = app.isEditable === false ? "disabled" : "";
   const field = k => `
     <label class="ad-split-pool ad-split-${k}">
@@ -311,25 +319,29 @@ Hooks.on("renderItemSheet", (app, html) => {
       <div class="ad-split-title">${game.i18n.localize("AWAKENED.SplitCost")}</div>
       <div class="ad-split-row">${SPLIT_POOLS.map(field).join("")}</div>
       <label class="ad-choose-toggle">
-        <input type="checkbox" data-ad-choose ${item.flags?.[MODULE_ID]?.choosePool ? "checked" : ""} ${disabled} />
+        <input type="checkbox" data-ad-choose ${chooseOn ? "checked" : ""} ${disabled} />
         <span>${game.i18n.localize("AWAKENED.ChooseOneToggle")}</span>
       </label>
-      <div class="ad-split-hint">${game.i18n.localize(item.flags?.[MODULE_ID]?.choosePool ? "AWAKENED.ChooseOneHint" : "AWAKENED.SplitCostHint")}</div>
+      <div class="ad-split-hint">${game.i18n.localize(chooseOn ? "AWAKENED.ChooseOneHint" : "AWAKENED.SplitCostHint")}</div>
     </div>`);
   costInput.closest(".resources").replaceWith(editor);
 
   editor.find("input[data-ad-split]").on("focus", ev => ev.currentTarget.select());
+  const saveEditor = () => {
+    const next = {};
+    editor.find("input[data-ad-split]").each((_, el) => { next[el.dataset.adSplit] = Math.max(0, parseInt(el.value) || 0); });
+    const choose = editor.find("input[data-ad-choose]").prop("checked");
+    return setSplitCost(item, next, choose);
+  };
   editor.find("input[data-ad-choose]").on("change", ev => {
     ev.preventDefault();
     ev.stopPropagation();
-    item.update({[`flags.${MODULE_ID}.choosePool`]: ev.currentTarget.checked});
+    saveEditor();
   });
   editor.find("input[data-ad-split]").on("change", ev => {
     ev.preventDefault();
     ev.stopPropagation();
-    const next = {};
-    editor.find("input[data-ad-split]").each((_, el) => { next[el.dataset.adSplit] = Math.max(0, parseInt(el.value) || 0); });
-    setSplitCost(item, next);
+    saveEditor();
   });
 });
 
