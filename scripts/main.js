@@ -286,7 +286,19 @@ const MORPH_SUCCESSES = 3;
 const MORPH_XP = 2;
 const MORPH_START_DIFFICULTY = 6;
 
+/** The installed version, used in file URLs so browsers fetch fresh copies after every update. */
+function moduleVersion() {
+  return game.modules?.get(MODULE_ID)?.version ?? "dev";
+}
+
 Hooks.once("init", () => {
+  // Load the stylesheet with the version in its URL (instead of module.json "styles"),
+  // so an updated sheet never shows with an old cached stylesheet.
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = `modules/${MODULE_ID}/styles/awakened-dreaming.css?v=${moduleVersion()}`;
+  document.head.appendChild(link);
+
   game.settings.register(MODULE_ID, "makeDefault", {
     name: "AWAKENED.SettingDefault",
     hint: "AWAKENED.SettingDefaultHint",
@@ -388,7 +400,7 @@ Hooks.once("setup", () => {
     static get defaultOptions() {
       return foundry.utils.mergeObject(super.defaultOptions, {
         classes: ["cyphersystem", "sheet", "actor", "pc", "awakened-dreaming"],
-        template: `${TEMPLATE_ROOT}/ad-pc-sheet.hbs`,
+        template: `${TEMPLATE_ROOT}/ad-pc-sheet.hbs?v=${moduleVersion()}`,
         width: 780,
         height: 960
       });
@@ -590,11 +602,15 @@ Hooks.once("setup", () => {
     label: "AWAKENED.SheetLabel"
   });
 
-  foundry.applications.handlebars.loadTemplates([
-    `${TEMPLATE_ROOT}/ad-pc-sheet.hbs`,
-    `${TEMPLATE_ROOT}/ad-header.hbs`,
-    `${TEMPLATE_ROOT}/ad-awakening.hbs`
-  ]);
+  // Fetch the partials with the version in the URL (so they are never stale) and register them
+  // under their plain paths, which is how the sheet template refers to them.
+  for (const name of ["ad-header.hbs", "ad-awakening.hbs"]) {
+    fetch(`${TEMPLATE_ROOT}/${name}?v=${moduleVersion()}`)
+      .then(r => r.text())
+      .then(text => Handlebars.registerPartial(`${TEMPLATE_ROOT}/${name}`, text))
+      .catch(err => console.error(`${MODULE_ID} | could not load ${name}`, err));
+  }
+  foundry.applications.handlebars.loadTemplates([`${TEMPLATE_ROOT}/ad-pc-sheet.hbs?v=${moduleVersion()}`]);
 
   game.modules.get(MODULE_ID).api = {AwakenedDreamingPCSheet};
 });
