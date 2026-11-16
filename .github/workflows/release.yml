@@ -34,6 +34,17 @@ jobs:
           jq --arg d "https://github.com/${GITHUB_REPOSITORY}/releases/download/v${{ steps.v.outputs.version }}/module.zip" \
              '.download = $d' module.json > module.tmp && mv module.tmp module.json
 
+      - name: Give the code and style files versioned names
+        if: steps.v.outputs.exists == 'false'
+        # Browsers cache scripts and stylesheets by URL. A new file name for every release means
+        # nobody's browser can keep running an old copy after an update.
+        run: |
+          V="${{ steps.v.outputs.version }}"
+          git mv scripts/main.js "scripts/main-$V.js"
+          git mv styles/awakened-dreaming.css "styles/awakened-dreaming-$V.css"
+          jq --arg js "scripts/main-$V.js" --arg css "styles/awakened-dreaming-$V.css" \
+             '.esmodules = [$js] | .styles = [$css]' module.json > module.tmp && mv module.tmp module.json
+
       - name: Build module.zip
         if: steps.v.outputs.exists == 'false'
         run: zip -r module.zip module.json scripts templates styles fonts lang README.md

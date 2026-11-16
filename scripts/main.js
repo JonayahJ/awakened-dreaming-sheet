@@ -286,19 +286,7 @@ const MORPH_SUCCESSES = 3;
 const MORPH_XP = 2;
 const MORPH_START_DIFFICULTY = 6;
 
-/** The installed version, used in file URLs so browsers fetch fresh copies after every update. */
-function moduleVersion() {
-  return game.modules?.get(MODULE_ID)?.version ?? "dev";
-}
-
 Hooks.once("init", () => {
-  // Load the stylesheet with the version in its URL (instead of module.json "styles"),
-  // so an updated sheet never shows with an old cached stylesheet.
-  const link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.href = `modules/${MODULE_ID}/styles/awakened-dreaming.css?v=${moduleVersion()}`;
-  document.head.appendChild(link);
-
   game.settings.register(MODULE_ID, "makeDefault", {
     name: "AWAKENED.SettingDefault",
     hint: "AWAKENED.SettingDefaultHint",
@@ -602,20 +590,12 @@ Hooks.once("setup", () => {
     label: "AWAKENED.SheetLabel"
   });
 
-  // Fetch the templates with the version in the URL (so browsers never reuse an old copy),
-  // compile them and register them under their plain paths. Foundry's template loader uses an
-  // already-registered template instead of fetching it again; if a fetch fails, Foundry simply
-  // loads the plain path itself.
-  for (const name of ["ad-pc-sheet.hbs", "ad-header.hbs", "ad-awakening.hbs"]) {
-    const path = `${TEMPLATE_ROOT}/${name}`;
-    fetch(`${path}?v=${moduleVersion()}`)
-      .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
-      .then(text => Handlebars.registerPartial(path, Handlebars.compile(text)))
-      .catch(err => {
-        console.warn(`${MODULE_ID} | versioned load of ${name} failed, using the normal path`, err);
-        foundry.applications.handlebars.loadTemplates([path]);
-      });
-  }
+  // Foundry fetches templates over its own socket, so browsers never serve stale copies of them.
+  foundry.applications.handlebars.loadTemplates([
+    `${TEMPLATE_ROOT}/ad-pc-sheet.hbs`,
+    `${TEMPLATE_ROOT}/ad-header.hbs`,
+    `${TEMPLATE_ROOT}/ad-awakening.hbs`
+  ]);
 
   game.modules.get(MODULE_ID).api = {AwakenedDreamingPCSheet};
 });
