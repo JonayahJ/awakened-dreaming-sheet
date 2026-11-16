@@ -1006,6 +1006,8 @@ function buildSheetData(actor, data) {
 
   return {
     useCustomHeader,
+    isNPC: !!flags.npc,
+    isGM: !!game.user?.isGM,
     campaignTitle: game.settings.get(MODULE_ID, "campaignTitle"),
     isStrange: general.gameMode === "Strange",
     flagPath: FLAG,

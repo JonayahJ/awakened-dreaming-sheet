@@ -118,5 +118,8 @@
   "AWAKENED.ChooseOneToggle": "Player picks one of these pools",
   "AWAKENED.ChooseOneHint": "These are alternatives: when the ability is used, the player picks ONE of the pools above and pays only that pool's cost. Leave a pool at 0 if it isn't an option.",
   "AWAKENED.ChooseOneText": "{name} costs {options}. Which pool are you paying from?",
-  "AWAKENED.ChoicePayTitle": "Pay {cost} (you'll pick the pool)"
+  "AWAKENED.ChoicePayTitle": "Pay {cost} (you'll pick the pool)",
+  "AWAKENED.NPC": "NPC",
+  "AWAKENED.NPCLong": "Non-player character",
+  "AWAKENED.NPCToggleHint": "Mark this character as an NPC (only the GM sees this box)."
 }

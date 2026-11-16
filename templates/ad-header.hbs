@@ -2,6 +2,7 @@
 <div class="ad-identity">
 
   <div class="ad-portrait profile-img-container">
+    {{#if ad.isNPC}}<div class="ad-npc-seal" title="{{localize 'AWAKENED.NPCLong'}}">{{localize 'AWAKENED.NPC'}}</div>{{/if}}
     <div class="ad-portrait-frame">
       <img class="profile-img" src="{{actor.img}}" data-edit="img" title="{{actor.name}}" />
     </div>
@@ -70,6 +71,11 @@
             <span>{{label}}</span>
           </label>
         {{/each}}
+        {{#if ad.isGM}}
+          <label class="ad-npc-toggle {{#if ad.isNPC}}on{{/if}}" title="{{localize 'AWAKENED.NPCToggleHint'}}">
+            <input type="checkbox" name="{{ad.flagPath}}.npc" {{checked ad.isNPC}} /> <span>{{localize 'AWAKENED.NPC'}}</span>
+          </label>
+        {{/if}}
         <a class="item-control reset-advancement ad-icon-btn" title="{{localize 'AWAKENED.ResetAdvancement'}}"><i class="fas fa-rotate"></i></a>
       </div>
     {{/unless}}
