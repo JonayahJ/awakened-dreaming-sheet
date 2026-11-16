@@ -51,11 +51,4 @@ Fonts: Cinzel, Cinzel Decorative and EB Garamond, all under the SIL Open Font Li
 
 ## Publishing a new version (for the maintainer)
 
-Update `version` in `module.json`, commit, then tag and push:
-
-```bash
-git tag v1.7.1
-git push origin main --tags
-```
-
-GitHub Actions builds `module.zip` and publishes a release with `module.json` and `module.zip` attached. Foundry's update button picks it up from there.
+Raise `version` in `module.json` and push to `main`. GitHub Actions sees the new version, tags it (for example `v1.7.1`), builds `module.zip` and publishes a release with `module.json` and `module.zip` attached. Foundry's update button picks it up from there. A push that doesn't change the version doesn't publish anything.
