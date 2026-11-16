@@ -149,6 +149,17 @@ async function resolvePayment(actor, net) {
   return {update, xpSpent, shortfall};
 }
 
+/** The ability's description for its chat card, always shown open. */
+async function chatDescription(item) {
+  const raw = item?.system?.description ?? "";
+  if (!raw) return "";
+  const TE = foundry.applications?.ux?.TextEditor?.implementation ?? globalThis.TextEditor;
+  const text = await TE.enrichHTML(raw, {relativeTo: item, secrets: false});
+  if (!text) return "";
+  const img = item.img ? `<img src="${item.img}" width="40" height="40" style="float:left; margin:0 6px 4px 0; border:none;"/>` : "";
+  return `<div class="ad-chat-description" style="margin:4px 0;">${img}${text}<div style="clear:both;"></div></div>`;
+}
+
 function xpNote(result) {
   if (!result?.xpSpent) return "";
   const shortLabel = splitCostLabel({might: 0, speed: 0, intellect: 0, ...result.shortfall});
@@ -165,9 +176,10 @@ async function paySplitCost(actor, item) {
   if (!result) return;
   await actor.update(result.update);
   const paidLabel = splitCostLabel(net);
+  const description = await chatDescription(item);
   return ChatMessage.create({
     speaker: ChatMessage.getSpeaker({actor}),
-    content: `<h3 style="margin:0">${foundry.utils.escapeHTML?.(item.name) ?? item.name}</h3><p>${paidLabel ? game.i18n.format("AWAKENED.SplitPaid", {name: actor.name, cost: paidLabel}) : game.i18n.localize("AWAKENED.StackFree")}</p>${xpNote(result)}`
+    content: `<h3 style="margin:0">${foundry.utils.escapeHTML?.(item.name) ?? item.name}</h3>${description}<p>${paidLabel ? game.i18n.format("AWAKENED.SplitPaid", {name: actor.name, cost: paidLabel}) : game.i18n.localize("AWAKENED.StackFree")}</p>${xpNote(result)}`
   });
 }
 
@@ -250,9 +262,10 @@ async function payChoiceCost(actor, item) {
   const result = await resolvePayment(actor, net);
   if (!result) return;
   await actor.update(result.update);
+  const description = await chatDescription(item);
   return ChatMessage.create({
     speaker: ChatMessage.getSpeaker({actor}),
-    content: `<h3 style="margin:0">${foundry.utils.escapeHTML?.(item.name) ?? item.name}</h3><p>${splitCostLabel(net) ? game.i18n.format("AWAKENED.SplitPaid", {name: actor.name, cost: splitCostLabel(net)}) : game.i18n.localize("AWAKENED.StackFree")}</p>${xpNote(result)}`
+    content: `<h3 style="margin:0">${foundry.utils.escapeHTML?.(item.name) ?? item.name}</h3>${description}<p>${splitCostLabel(net) ? game.i18n.format("AWAKENED.SplitPaid", {name: actor.name, cost: splitCostLabel(net)}) : game.i18n.localize("AWAKENED.StackFree")}</p>${xpNote(result)}`
   });
 }
 
@@ -268,9 +281,13 @@ async function payStack(actor) {
   const esc = t => foundry.utils.escapeHTML?.(t) ?? t;
   const lines = rows.map(r => `<li>${r.label}: ${r.total} − ${r.edge} ${game.i18n.localize("AWAKENED.Edge")} = <strong>${r.net}</strong></li>`).join("");
   const note = skipped.length ? `<p><em>${game.i18n.format("AWAKENED.StackSkipped", {names: skipped.map(esc).join(", ")})}</em></p>` : "";
+  const descriptions = (await Promise.all(items.map(async i => {
+    const d = await chatDescription(i);
+    return d ? `<h4 style="margin:6px 0 0">${esc(i.name)}</h4>${d}` : "";
+  }))).join("");
   return ChatMessage.create({
     speaker: ChatMessage.getSpeaker({actor}),
-    content: `<h3 style="margin:0">${game.i18n.localize("AWAKENED.StackTitle")}</h3><p>${items.map(i => esc(i.name)).join(" + ")}</p><ul>${lines || `<li>${game.i18n.localize("AWAKENED.StackFree")}</li>`}</ul>${xpNote(result)}${note}`
+    content: `<h3 style="margin:0">${game.i18n.localize("AWAKENED.StackTitle")}</h3><p>${items.map(i => esc(i.name)).join(" + ")}</p>${descriptions}<ul>${lines || `<li>${game.i18n.localize("AWAKENED.StackFree")}</li>`}</ul>${xpNote(result)}${note}`
   });
 }
 
