@@ -178,22 +178,34 @@
 
   {{!-- ===================== STATUS: DAMAGE TRACK + RECOVERY ===================== --}}
   <div class="ad-status">
-    <div class="ad-track">
-      <div class="ad-mini-title">{{localize 'AWAKENED.DamageTrack'}}</div>
-      <div class="ad-track-steps">
-        {{#each ad.damage.states}}
-          <a class="ad-step ad-step-{{css}} {{#if active}}active{{/if}} {{#if passed}}passed{{/if}}" data-ad-damage="{{key}}">{{label}}</a>
+    <div class="ad-conditions">
+      <div class="ad-cond-head"><span class="ad-mini-title">{{localize 'AWAKENED.DamageTrack'}}</span><span class="ad-cond-note">{{localize 'AWAKENED.ConditionsHint'}}</span></div>
+      <div class="ad-cond-track">
+        <div class="ad-cond-col ad-cond-col-hale {{#if ad.conditions.hale}}on{{/if}}">
+          <a class="ad-cond-band ad-cond-hale" data-ad-condition="hale" title="{{localize 'AWAKENED.HaleHint'}}"><i class="fa-solid fa-heart"></i><span>{{localize 'CYPHERSYSTEM.Hale'}}</span></a>
+        </div>
+        <div class="ad-cond-col ad-cond-col-imp {{#if ad.conditions.anyImpaired}}lit{{/if}}">
+          {{#each ad.conditions.impaired}}
+            <a class="ad-cond-band imp {{#if on}}on{{/if}} {{#if held}}held{{/if}}" data-ad-condition="{{key}}" title="{{effect}}{{#if held}} {{localize 'AWAKENED.ConditionHeld'}}{{/if}}">{{label}}</a>
+          {{/each}}
+        </div>
+        <div class="ad-cond-col ad-cond-col-deb {{#if ad.conditions.anyDebilitated}}lit{{/if}}">
+          {{#each ad.conditions.debilitated}}
+            <a class="ad-cond-band deb {{#if on}}on{{/if}}" data-ad-condition="{{key}}" title="{{effect}}">{{label}}</a>
+          {{/each}}
+        </div>
+      </div>
+      <ul class="ad-cond-effects">
+        {{#each ad.conditions.active}}
+          <li><b>{{label}}:</b> {{effect}}
+            {{#if (eq key "unconscious")}}
+              <a class="ad-text-btn ad-success {{#unless ../ad.conditions.canWake}}disabled{{/unless}}" data-ad-wake title="{{#if ../ad.conditions.canWake}}{{localize 'AWAKENED.WakeHint'}}{{else}}{{localize 'AWAKENED.WakeNoXP'}}{{/if}}"><i class="fas fa-bolt"></i> {{localize 'AWAKENED.Wake'}}</a>
+            {{/if}}
+          </li>
+        {{else}}
+          <li class="none">{{localize 'AWAKENED.HaleEffect'}}</li>
         {{/each}}
-      </div>
-      <div class="ad-track-effect">
-        {{ad.damage.effect}}
-        {{#if (eq ad.damage.state "Impaired")}}
-          <a class="item-control apply-impaired ad-apply {{#if actor.system.combat.damageTrack.applyImpaired}}on{{/if}}" title="{{localize 'CYPHERSYSTEM.ApplyStatusToRoll'}}"><i class="fas fa-check"></i></a>
-        {{/if}}
-        {{#if (eq ad.damage.state "Debilitated")}}
-          <a class="item-control apply-debilitated ad-apply {{#if actor.system.combat.damageTrack.applyDebilitated}}on{{/if}}" title="{{localize 'CYPHERSYSTEM.ApplyStatusToRoll'}}"><i class="fas fa-check"></i></a>
-        {{/if}}
-      </div>
+      </ul>
     </div>
 
     <div class="ad-recovery">

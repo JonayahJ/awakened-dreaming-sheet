@@ -1,4 +1,4 @@
-<form class="ad-form flexcol" autocomplete="off">
+<form class="ad-form flexcol ad-on-page-{{ad.page}}" autocomplete="off">
 
   {{!-- Dice Tray (system feature, kept) --}}
   {{#unless (or sheetSettings.isLimited sheetSettings.isObserver)}}
@@ -23,6 +23,50 @@
     <span class="ad-banner-rule"></span>
   </div>
 
+  <nav class="ad-pages">
+    <a class="ad-page-tab {{#if (eq ad.page 1)}}active{{/if}}" data-ad-page="1"><span class="ad-roman">I</span> {{localize 'AWAKENED.PageCharacter'}}</a>
+    <a class="ad-page-tab {{#if (eq ad.page 2)}}active{{/if}}" data-ad-page="2"><span class="ad-roman">II</span> {{localize 'AWAKENED.PageGear'}}</a>
+  </nav>
+
+  {{!-- Compact summary bar (page II) --}}
+  <div class="ad-mini">
+    <img class="ad-mini-portrait" src="{{actor.img}}" />
+    <div class="ad-mini-id">
+      <div class="ad-mini-name">{{actor.name}}</div>
+      <div class="ad-mini-sentence">{{actor.system.basic.descriptor}} {{actor.system.basic.type}} who {{actor.system.basic.focus}}</div>
+    </div>
+    <div class="ad-mini-pools">
+      {{#each ad.pools}}
+        <div class="ad-mini-pool ad-mini-{{key}}">
+          <span class="lbl">{{label}}</span>
+          <span class="val"><b>{{value}}</b>/{{max}}</span>
+          <span class="edge">E{{edge}}</span>
+        </div>
+      {{/each}}
+    </div>
+    <div class="ad-mini-status">
+      <span class="ad-mini-chip {{ad.conditions.level}}" title="{{ad.conditions.summary}}">{{ad.conditions.summary}}</span>
+      <span class="ad-mini-chip">{{localize 'AWAKENED.Effort'}} {{ad.effort.remaining}}/{{ad.effort.tier}}</span>
+      <span class="ad-mini-chip">{{localize 'AWAKENED.Tier'}} {{actor.system.basic.tier}} · XP {{actor.system.basic.xp}}</span>
+    </div>
+  </div>
+
+  <div class="ad-page2-purse">
+      {{#if ad.currency.length}}
+        <div class="ad-purse">
+          <span class="ad-mini-title"><i class="fa-solid fa-coins"></i> {{localize 'AWAKENED.Purse'}}</span>
+          <div class="ad-coins">
+            {{#each ad.currency}}
+              <label class="ad-coin ad-coin-{{tier}}">
+                <span class="ad-coin-face">{{name}}</span>
+                <input class="ad-select-on-focus" type="number" min="0" name="{{field}}" value="{{value}}" />
+              </label>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
+  </div>
+
   {{!-- Sheet Header --}}
   <header class="sheet-header ad-header">
     {{#if ad.useCustomHeader}}
@@ -33,15 +77,15 @@
         {{> systems/cyphersystem/templates/headers/pc-stats.html}}
       </div>
     {{/if}}
+    <div class="ad-page1-awakenings">{{> modules/awakened-dreaming-sheet/templates/ad-awakenings.hbs}}</div>
   </header>
 
   {{!-- Sheet Tab Navigation --}}
   <nav class="sheet-tabs tabs ad-tabs" data-group="primary">
     {{#unless sheetSettings.isLimited}}
-      <a class="item" data-tab="awakening"><i class="fa-solid fa-moon-stars"></i> {{localize 'AWAKENED.Awakening'}}</a>
+      <a class="item" data-tab="abilities"><i class="fa-solid fa-sparkles"></i> {{localize 'CYPHERSYSTEM.Abilities'}}</a>
       <a class="item" data-tab="skills"><i class="fa-solid fa-scroll"></i> {{localize 'CYPHERSYSTEM.Skills'}}</a>
       <a class="item" data-tab="combat"><i class="fa-solid fa-swords"></i> {{localize 'CYPHERSYSTEM.Combat'}}</a>
-      <a class="item" data-tab="abilities"><i class="fa-solid fa-sparkles"></i> {{localize 'CYPHERSYSTEM.Abilities'}}</a>
       <a class="item" data-tab="items"><i class="fa-solid fa-sack"></i> {{localize 'CYPHERSYSTEM.Equipment'}}</a>
       <a class="item ad-tab-icon" data-tab="notes" title="{{localize 'CYPHERSYSTEM.Notes'}}"><i class="fa-regular fa-feather-pointed"></i></a>
     {{/unless}}
@@ -63,9 +107,6 @@
   {{!-- Sheet Body: the system's own tab content, restyled by CSS --}}
   <section class="sheet-body pc ad-body {{#if sheetSettings.isLimited}}limited{{/if}}">
 
-    <div class="tab ad-awakening-tab" data-group="primary" data-tab="awakening">
-      {{> modules/awakened-dreaming-sheet/templates/ad-awakening.hbs}}
-    </div>
 
     <div class="tab skills" data-group="primary" data-tab="skills">
       {{> systems/cyphersystem/templates/tabs/skills-tab/skills.html}}
@@ -81,19 +122,7 @@
     </div>
 
     <div class="tab items" data-group="primary" data-tab="items">
-      {{#if ad.currency.length}}
-        <div class="ad-purse">
-          <span class="ad-mini-title"><i class="fa-solid fa-coins"></i> {{localize 'AWAKENED.Purse'}}</span>
-          <div class="ad-coins">
-            {{#each ad.currency}}
-              <label class="ad-coin ad-coin-{{tier}}">
-                <span class="ad-coin-face">{{name}}</span>
-                <input class="ad-select-on-focus" type="number" min="0" name="{{field}}" value="{{value}}" />
-              </label>
-            {{/each}}
-          </div>
-        </div>
-      {{/if}}
+
       {{> systems/cyphersystem/templates/tabs/equipment-tab/equipment.html}}
       {{#if actor.system.settings.equipment.cyphers.active}}
         {{> systems/cyphersystem/templates/tabs/equipment-tab/cyphers.html}}
@@ -172,6 +201,7 @@
         </details>
       {{/if}}
       {{> systems/cyphersystem/templates/tabs/abilities-tab/spells.html}}
+      {{> modules/awakened-dreaming-sheet/templates/ad-morphs.hbs}}
     </div>
 
     <div class="tab description ad-journal" data-group="primary" data-tab="notes">

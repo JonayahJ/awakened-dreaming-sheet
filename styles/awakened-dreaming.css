@@ -1289,3 +1289,86 @@
   font-family: var(--ad-caps); font-weight: 700; font-size: 12px; box-shadow: none;
 }
 .awakened-dreaming .ad-stack-amount small { color: var(--ad-gold-light); font-style: italic; font-size: 12px; }
+
+/* ---------- v1.13: two pages ---------- */
+.awakened-dreaming .ad-pages { flex: 0 0 auto; display: flex; gap: 6px; margin: -6px 0 10px; }
+.awakened-dreaming .ad-page-tab {
+  flex: 1 1 0; text-align: center; padding: 6px 10px 7px;
+  font-family: var(--ad-caps); font-weight: 700; font-size: 12.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ad-ink-soft); background: rgba(43, 29, 19, 0.06); border: 1px solid var(--ad-gold-faint); border-radius: 0 0 6px 6px;
+}
+.awakened-dreaming .ad-page-tab .ad-roman { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; align-items: center; justify-content: center; margin-right: 6px; background: var(--ad-ink-faint); font-size: 11px; }
+.awakened-dreaming .ad-page-tab.active { color: var(--ad-gold-light); background: linear-gradient(180deg, var(--ad-night-2), var(--ad-night)); border-color: var(--ad-gold); }
+.awakened-dreaming .ad-page-tab.active .ad-roman { background: var(--ad-gold); color: var(--ad-night); }
+
+.awakened-dreaming .ad-on-page-1 .ad-mini,
+.awakened-dreaming .ad-on-page-1 .ad-tabs,
+.awakened-dreaming .ad-on-page-1 .ad-body { display: none !important; }
+.awakened-dreaming .ad-on-page-2 .ad-header { display: none !important; }
+
+.awakened-dreaming .ad-mini {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 14px; margin: 0 0 10px; padding: 8px 12px;
+  border: 1px solid var(--ad-gold-faint); border-top: 2px solid var(--ad-gold); border-radius: 4px; background: rgba(255, 251, 240, 0.6);
+}
+.awakened-dreaming .ad-mini-portrait { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid var(--ad-gold); background: var(--ad-night); flex: 0 0 auto; }
+.awakened-dreaming .ad-mini-id { flex: 0 1 auto; min-width: 0; }
+.awakened-dreaming .ad-mini-name { font-family: var(--ad-caps); font-weight: 700; font-size: 20px; color: var(--ad-crimson); line-height: 1.1; }
+.awakened-dreaming .ad-mini-sentence { font-style: italic; font-size: 13px; color: var(--ad-ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.awakened-dreaming .ad-mini-pools { display: flex; gap: 8px; margin-left: auto; }
+.awakened-dreaming .ad-mini-pool { --c: var(--ad-ink); display: flex; flex-direction: column; align-items: center; min-width: 64px; padding: 2px 8px 3px; border: 1.5px solid var(--c); border-radius: 8px; background: var(--ad-parchment-light); }
+.awakened-dreaming .ad-mini-might { --c: var(--ad-might); } .awakened-dreaming .ad-mini-speed { --c: var(--ad-speed); } .awakened-dreaming .ad-mini-intellect { --c: var(--ad-intellect); }
+.awakened-dreaming .ad-mini-pool .lbl { font-family: var(--ad-caps); font-weight: 700; font-size: 8.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c); }
+.awakened-dreaming .ad-mini-pool .val { font-family: var(--ad-caps); font-size: 12px; color: var(--ad-ink-soft); }
+.awakened-dreaming .ad-mini-pool .val b { font-size: 17px; color: var(--c); }
+.awakened-dreaming .ad-mini-pool .edge { font-size: 10.5px; font-style: italic; color: var(--ad-ink-soft); }
+.awakened-dreaming .ad-mini-status { display: flex; flex-direction: column; gap: 3px; }
+.awakened-dreaming .ad-mini-chip { padding: 0 8px; border-radius: 9px; border: 1px solid var(--ad-gold-faint); background: var(--ad-parchment-light); font-family: var(--ad-caps); font-weight: 700; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ad-ink-soft); white-space: nowrap; text-align: center; }
+.awakened-dreaming .ad-mini-chip.hale { background: var(--ad-hale); color: #fbf3df; border-color: var(--ad-hale); }
+
+/* ---------- v1.13: page layout + conditions ---------- */
+.awakened-dreaming .ad-on-page-1 .ad-page2-purse { display: none; }
+.awakened-dreaming .ad-page2-purse .ad-purse { margin: 0 0 10px; }
+.awakened-dreaming .ad-on-page-1 .sheet-header.ad-header { overflow-y: auto; flex: 1 1 auto; }
+.awakened-dreaming .ad-status { grid-template-columns: 1fr; }
+.awakened-dreaming .ad-conditions { padding: 7px 12px 8px; border: 1px solid var(--ad-gold-faint); border-top: 2px solid var(--ad-gold); border-radius: 3px; background: rgba(255,251,240,.45); }
+.awakened-dreaming .ad-cond-head { display: flex; align-items: baseline; justify-content: space-between; }
+.awakened-dreaming .ad-cond-note { font-style: italic; font-size: 12px; color: var(--ad-ink-soft); }
+.awakened-dreaming .ad-cond-effects { margin: 6px 0 0; padding: 0 0 0 16px; font-size: 13.5px; color: var(--ad-ink); }
+.awakened-dreaming .ad-cond-effects li { margin: 2px 0; }
+.awakened-dreaming .ad-cond-effects li.none { list-style: none; margin-left: -16px; font-style: italic; color: var(--ad-ink-soft); }
+.awakened-dreaming .ad-cond-effects .ad-text-btn { margin-left: 6px; }
+.awakened-dreaming .ad-page1-awakenings .ad-card { margin: 4px 0; }
+
+/* ---------- v1.13: stacked chevron condition track ---------- */
+.awakened-dreaming .ad-cond-track { display: flex; align-items: stretch; margin: 7px 0 4px; }
+.awakened-dreaming .ad-cond-col {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 4px 26px 4px 22px; margin-right: -12px;
+  background: rgba(43,29,19,.13);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%, 18px 50%);
+}
+.awakened-dreaming .ad-cond-col:last-child { margin-right: 0; }
+.awakened-dreaming .ad-cond-col-hale { flex: 0 0 104px; padding-left: 8px; clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%); }
+.awakened-dreaming .ad-cond-col-imp, .awakened-dreaming .ad-cond-col-deb { flex: 1 1 0; }
+.awakened-dreaming .ad-cond-col-imp.lit { background: rgba(176,112,24,.28); }
+.awakened-dreaming .ad-cond-col-deb.lit { background: rgba(150,36,28,.26); }
+.awakened-dreaming .ad-cond-band {
+  display: block; text-align: center; padding: 4px 6px; border-radius: 2px;
+  background: rgba(255,251,240,.55);
+  font-family: var(--ad-caps); font-weight: 700; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ad-ink-soft); white-space: nowrap;
+}
+.awakened-dreaming .ad-cond-hale { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: transparent; font-size: 12px; }
+.awakened-dreaming .ad-cond-col-hale.on { background: linear-gradient(180deg,#3f8a52,var(--ad-hale)); }
+.awakened-dreaming .ad-cond-col-hale.on .ad-cond-hale { color: #fbf3df; text-shadow: 0 1px 1px rgba(0,0,0,.4); }
+.awakened-dreaming .ad-cond-band.imp.on { background: linear-gradient(180deg,#d0902d,var(--ad-impaired)); color: #fbf3df; text-shadow: 0 1px 1px rgba(0,0,0,.4); }
+.awakened-dreaming .ad-cond-band.deb.on { background: linear-gradient(180deg,#c03a30,var(--ad-debilitated)); color: #fbf3df; text-shadow: 0 1px 1px rgba(0,0,0,.4); }
+.awakened-dreaming .ad-cond-band { cursor: pointer; transition: background 150ms ease, color 150ms ease; }
+.awakened-dreaming .ad-cond-band:hover { background: rgba(255,251,240,.9); color: var(--ad-ink); text-shadow: none; }
+.awakened-dreaming .ad-cond-col-hale .ad-cond-band:hover { background: transparent; }
+.awakened-dreaming .ad-cond-band.imp.held { box-shadow: inset 0 0 0 1.5px var(--ad-impaired); color: var(--ad-impaired); font-style: italic; }
+.awakened-dreaming .ad-cond-col-imp, .awakened-dreaming .ad-cond-col-deb { justify-content: center; }
+.awakened-dreaming .ad-text-btn.disabled { opacity: .45; pointer-events: none; filter: grayscale(1); }
+.awakened-dreaming .ad-mini-chip.impaired { background: var(--ad-impaired); color: #fbf3df; border-color: var(--ad-impaired); }
+.awakened-dreaming .ad-mini-chip.debilitated { background: var(--ad-debilitated); color: #fbf3df; border-color: var(--ad-debilitated); }
+.awakened-dreaming .ad-mini-chip { max-width: 190px; overflow: hidden; text-overflow: ellipsis; }

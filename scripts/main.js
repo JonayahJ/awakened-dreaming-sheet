@@ -158,6 +158,103 @@ async function resolvePayment(actor, net) {
   return {update, xpSpent, shortfall};
 }
 
+/* Damage track as conditions (house rule).
+   Impaired group: any mix can be on. Debilitated group: any mix can be on, and while any is on
+   the Impaired ones are switched off and held; they come back when the last Debilitated one clears. */
+const CONDITIONS = {
+  impaired: ["impaired", "hindered", "slowed"],
+  debilitated: ["immobile", "debilitated", "unconscious"]
+};
+const CONDITION_KEYS = [...CONDITIONS.impaired, ...CONDITIONS.debilitated];
+const CONDITION_LABEL = {
+  impaired: "AWAKENED.CondImpaired", hindered: "AWAKENED.CondHindered", slowed: "AWAKENED.CondSlowed",
+  immobile: "AWAKENED.CondImmobile", debilitated: "AWAKENED.CondDebilitated", unconscious: "AWAKENED.CondUnconscious"
+};
+const CONDITION_EFFECT = Object.fromEntries(CONDITION_KEYS.map(k => [k, `${CONDITION_LABEL[k]}Effect`]));
+const WAKE_XP = 2;
+
+/** Current conditions: {on: {key: bool}, held: [keys]}. Older characters fall back to the system track. */
+function readConditions(actor) {
+  const f = actor.flags?.[MODULE_ID]?.conditions;
+  const on = Object.fromEntries(CONDITION_KEYS.map(k => [k, false]));
+  if (f && typeof f === "object") {
+    for (const k of CONDITION_KEYS) on[k] = !!f[k];
+    const held = Array.isArray(f.held) ? f.held.filter(k => CONDITIONS.impaired.includes(k)) : [];
+    return {on, held};
+  }
+  const state = actor.system?.combat?.damageTrack?.state;
+  if (state === "Impaired") on.impaired = true;
+  if (state === "Debilitated") on.debilitated = true;
+  return {on, held: []};
+}
+
+/** Pure rule: what the conditions become after clicking `key` ("hale" clears everything). */
+function toggleCondition(current, key) {
+  const on = {...current.on};
+  let held = [...(current.held ?? [])];
+  const anyDeb = () => CONDITIONS.debilitated.some(k => on[k]);
+  if (key === "hale") {
+    for (const k of CONDITION_KEYS) on[k] = false;
+    return {on, held: []};
+  }
+  if (CONDITIONS.impaired.includes(key)) {
+    if (anyDeb()) held = held.includes(key) ? held.filter(k => k !== key) : [...held, key];
+    else on[key] = !on[key];
+    return {on, held};
+  }
+  if (CONDITIONS.debilitated.includes(key)) {
+    const wasDeb = anyDeb();
+    on[key] = !on[key];
+    if (!wasDeb && on[key]) {
+      held = CONDITIONS.impaired.filter(k => on[k]);
+      for (const k of CONDITIONS.impaired) on[k] = false;
+    } else if (wasDeb && !anyDeb()) {
+      for (const k of held) on[k] = true;
+      held = [];
+    }
+    return {on, held};
+  }
+  return {on, held};
+}
+
+/** Actor update for a set of conditions. The system's own track follows along for anything that
+    reads it, but its built-in roll penalties stay off so they don't double up with these. */
+function conditionUpdate(next) {
+  const anyDeb = CONDITIONS.debilitated.some(k => next.on[k]);
+  const anyImp = CONDITIONS.impaired.some(k => next.on[k]);
+  return {
+    [`${FLAG}.conditions`]: {...next.on, held: next.held},
+    "system.combat.damageTrack.state": anyDeb ? "Debilitated" : anyImp ? "Impaired" : "Hale",
+    "system.combat.damageTrack.applyImpaired": false,
+    "system.combat.damageTrack.applyDebilitated": false
+  };
+}
+
+/* Hindered: Effort costs extra points per level from the rolled pool, and Edge doesn't reduce them.
+   The Cypher System has no hook before it charges a roll, so the extra is charged right after. */
+Hooks.on("rollEngine", async (actor, data) => {
+  try {
+    if (!actor?.isOwner || data?.reroll) return;
+    if (!readConditions(actor).on.hindered) return;
+    const levels = Number(data.effortTotal) || 0;
+    const key = POOL_KEY[data.pool];
+    if (levels <= 0 || !key || data.teen) return;
+    const extra = levels * (Number(setting("hinderedExtra", 2)) || 0);
+    if (extra <= 0) return;
+    const fresh = game.actors.get(actor.id) ?? actor;
+    const net = {might: 0, speed: 0, intellect: 0, [key]: extra};
+    const result = await resolvePayment(fresh, net);
+    if (!result) return;
+    await fresh.update(result.update);
+    ChatMessage.create({
+      speaker: ChatMessage.getSpeaker({actor: fresh}),
+      content: `<p><b>${game.i18n.localize("AWAKENED.CondHindered")}:</b> ${game.i18n.format("AWAKENED.HinderedCharged", {amount: extra, pool: game.i18n.localize(`CYPHERSYSTEM.${data.pool}`), levels})}</p>${xpNote(result)}`
+    });
+  } catch (err) {
+    console.error(`${MODULE_ID} | Hindered surcharge failed`, err);
+  }
+});
+
 /** The ability's description for its chat card, always shown open. */
 async function chatDescription(item) {
   const raw = item?.system?.description ?? "";
@@ -496,6 +593,16 @@ Hooks.once("init", () => {
     default: 1
   });
 
+  game.settings.register(MODULE_ID, "hinderedExtra", {
+    name: "AWAKENED.SettingHindered",
+    hint: "AWAKENED.SettingHinderedHint",
+    scope: "world",
+    config: true,
+    type: Number,
+    range: {min: 0, max: 5, step: 1},
+    default: 2
+  });
+
   game.settings.register(MODULE_ID, "currencyNames", {
     name: "AWAKENED.SettingCurrency",
     hint: "AWAKENED.SettingCurrencyHint",
@@ -569,6 +676,7 @@ Hooks.once("setup", () => {
       return foundry.utils.mergeObject(super.defaultOptions, {
         classes: ["cyphersystem", "sheet", "actor", "pc", "awakened-dreaming"],
         template: `${TEMPLATE_ROOT}/ad-pc-sheet.hbs`,
+        tabs: [{navSelector: ".sheet-tabs", contentSelector: ".sheet-body", initial: "abilities"}],
         width: 780,
         height: 960
       });
@@ -592,7 +700,29 @@ Hooks.once("setup", () => {
       data.ad.passiveLists = {abilities: passives};
       data.ad.passiveCount = passives.length;
       data.ad.passivesOpen = !!game.user.getFlag(MODULE_ID, "passivesOpen")?.[this.actor.id];
+      const view = game.user.getFlag(MODULE_ID, "view")?.[this.actor.id] ?? {};
+      if (!this._adPage) this._adPage = view.page === 2 ? 2 : 1;
+      data.ad.page = this._adPage;
+      // Open on the tab this person last used on this sheet (once per opening).
+      if (!this._adTabRestored && this._tabs?.[0]) {
+        this._adTabRestored = true;
+        const tabs = ["abilities", "skills", "combat", "items", "notes", "description", "tags", "settings"];
+        if (tabs.includes(view.tab)) this._tabs[0].active = view.tab;
+      }
       return data;
+    }
+
+    /** Remember this person's page and tab for this sheet. */
+    _adSaveView(patch) {
+      const all = foundry.utils.deepClone(game.user.getFlag(MODULE_ID, "view") ?? {});
+      all[this.actor.id] = {...(all[this.actor.id] ?? {}), ...patch};
+      game.user.setFlag(MODULE_ID, "view", all);
+    }
+
+    /** @override */
+    _onChangeTab(event, tabs, active) {
+      super._onChangeTab?.(event, tabs, active);
+      if (event) this._adSaveView({tab: active});
     }
 
     /**
@@ -740,6 +870,44 @@ Hooks.once("setup", () => {
         actor.update({[`${FLAG}.stack`]: (getFlags(actor).stack ?? []).filter(x => x !== id)});
       });
 
+      // Two pages: switch without re-rendering, and remember the choice.
+      html.find("[data-ad-page]").on("click", event => {
+        event.preventDefault();
+        const page = Number(event.currentTarget.dataset.adPage) === 2 ? 2 : 1;
+        this._adPage = page;
+        const el = $(this.form ?? html[0]);
+        el.removeClass("ad-on-page-1 ad-on-page-2").addClass(`ad-on-page-${page}`);
+        html.find("[data-ad-page]").removeClass("active");
+        html.find(`[data-ad-page="${page}"]`).addClass("active");
+        this._adSaveView({page});
+      });
+
+      // Conditions (damage track).
+      html.find("[data-ad-condition]").on("click", event => {
+        event.preventDefault();
+        const next = toggleCondition(readConditions(actor), event.currentTarget.dataset.adCondition);
+        actor.update(conditionUpdate(next));
+      });
+
+      // Unconscious: spend XP to gain 1 Intellect and wake up.
+      html.find("[data-ad-wake]").on("click", async event => {
+        event.preventDefault();
+        const xp = Number(actor.system.basic.xp) || 0;
+        if (xp < WAKE_XP) return ui.notifications.warn(game.i18n.localize("AWAKENED.WakeNoXP"));
+        const current = readConditions(actor);
+        if (!current.on.unconscious) return;
+        const next = toggleCondition(current, "unconscious");
+        await actor.update({
+          ...conditionUpdate(next),
+          "system.basic.xp": xp - WAKE_XP,
+          "system.pools.intellect.value": (Number(actor.system.pools.intellect.value) || 0) + 1
+        });
+        ChatMessage.create({
+          speaker: ChatMessage.getSpeaker({actor}),
+          content: `<p>${game.i18n.format("AWAKENED.WakeChat", {name: actor.name, xp: WAKE_XP})}</p>`
+        });
+      });
+
       // Damage track: click a stage to set it.
       html.find("[data-ad-damage]").on("click", event => {
         event.preventDefault();
@@ -839,7 +1007,8 @@ Hooks.once("setup", () => {
   foundry.applications.handlebars.loadTemplates([
     `${TEMPLATE_ROOT}/ad-pc-sheet.hbs`,
     `${TEMPLATE_ROOT}/ad-header.hbs`,
-    `${TEMPLATE_ROOT}/ad-awakening.hbs`
+    `${TEMPLATE_ROOT}/ad-awakenings.hbs`,
+    `${TEMPLATE_ROOT}/ad-morphs.hbs`
   ]);
 
   game.modules.get(MODULE_ID).api = {AwakenedDreamingPCSheet};
@@ -1013,6 +1182,23 @@ function buildSheetData(actor, data) {
   }));
   const damageEffect = (DAMAGE_EFFECTS[state] || []).map(loc).join(" ");
 
+  // Conditions (house rule damage track)
+  const cond = readConditions(actor);
+  const condRow = k => ({key: k, label: loc(CONDITION_LABEL[k]), effect: loc(CONDITION_EFFECT[k]), on: cond.on[k], held: cond.held.includes(k)});
+  const condActive = CONDITION_KEYS.filter(k => cond.on[k]).map(condRow);
+  const anyImpaired = CONDITIONS.impaired.some(k => cond.on[k]);
+  const anyDebilitated = CONDITIONS.debilitated.some(k => cond.on[k]);
+  const conditions = {
+    impaired: CONDITIONS.impaired.map(condRow),
+    debilitated: CONDITIONS.debilitated.map(condRow),
+    active: condActive,
+    anyImpaired, anyDebilitated,
+    hale: !condActive.length,
+    level: anyDebilitated ? "debilitated" : anyImpaired ? "impaired" : "hale",
+    summary: condActive.length ? condActive.map(c => c.label).join(", ") : loc("CYPHERSYSTEM.Hale"),
+    canWake: (Number(sys.basic.xp) || 0) >= WAKE_XP
+  };
+
   // Recovery (house rules)
   const rec = sys.combat.recoveries;
   const recoveryKinds = RECOVERY_KINDS.map(kind => {
@@ -1169,6 +1355,7 @@ function buildSheetData(actor, data) {
     pools,
     additionalPool,
     damage: {states: damageStates, effect: damageEffect, state},
+    conditions,
     recovery: (() => {
       const formula = recoveryFormula(actor);
       const parsed = parseRecovery(formula) ?? {count: 1, size: 4, bonus: 0};
