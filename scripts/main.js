@@ -383,7 +383,7 @@ function warnBulanLimit(actor, item, counts) {
 
 /** The chips an item window shows: every slot, plus "on the belt". */
 const WINDOW_SLOTS = ["head", "chest", "hands", "legs", "feet", "shield", "weapon", "belt", "beltItems", "back", "jewelry"];
-const NEW_ITEM_TYPES = {armor: "AWAKENED.TypeArmor", attack: "AWAKENED.TypeWeapon", equipment: "AWAKENED.TypeEquipment", cypher: "AWAKENED.TypeBulan", artifact: "AWAKENED.TypeArtifact"};
+const NEW_ITEM_TYPES = {armor: "AWAKENED.TypeArmor", attack: "AWAKENED.TypeWeapon", equipment: "AWAKENED.TypeEquipment", cypher: "AWAKENED.MiscItem", artifact: "AWAKENED.TypeArtifact"};
 function defaultNewType(slot) {
   if (["head", "chest", "hands", "legs", "feet", "shield"].includes(slot)) return "armor";
   if (slot === "weapon") return "attack";
@@ -1074,20 +1074,24 @@ Hooks.once("i18nInit", () => {
   try { enabled = game.settings.get(MODULE_ID, "bulanNames"); } catch (e) { /* settings not ready: keep default */ }
   if (!enabled) return;
 
-  const keys = [
-    "TYPES.Item.cypher", "CYPHERSYSTEM.Cypher", "CYPHERSYSTEM.Cyphers", "CYPHERSYSTEM.NewCypher",
-    "CYPHERSYSTEM.UnidentifiedCypher", "CYPHERSYSTEM.NameOfUnidentifiedCypher", "CYPHERSYSTEM.SortCyphersByType",
-    "CYPHERSYSTEM.NoTypeCypher", "CYPHERSYSTEM.NoTypeFantasticCypher", "CYPHERSYSTEM.SubtleCypher",
-    "CYPHERSYSTEM.SubtleFantasticCypher", "CYPHERSYSTEM.ManifestCypher", "CYPHERSYSTEM.ManifestFantasticCypher"
-  ];
+  // Anything can be a Bulan now (a tick on the item), so the Cypher System's "cypher" item type
+  // becomes a plain Miscellaneous item.
   const t = game.i18n.translations;
-  for (const key of keys) {
+  const exact = {
+    "TYPES.Item.cypher": "AWAKENED.MiscItem", "CYPHERSYSTEM.Cypher": "AWAKENED.MiscItem",
+    "CYPHERSYSTEM.Cyphers": "AWAKENED.OtherItems", "CYPHERSYSTEM.NewCypher": "AWAKENED.NewMiscItem",
+    "CYPHERSYSTEM.CypherLimit": "AWAKENED.BulanLimit"
+  };
+  for (const [key, to] of Object.entries(exact)) {
+    if (typeof foundry.utils.getProperty(t, key) === "string") foundry.utils.setProperty(t, key, game.i18n.localize(to));
+  }
+  for (const key of ["CYPHERSYSTEM.UnidentifiedCypher", "CYPHERSYSTEM.NameOfUnidentifiedCypher", "CYPHERSYSTEM.SortCyphersByType",
+    "CYPHERSYSTEM.NoTypeCypher", "CYPHERSYSTEM.NoTypeFantasticCypher", "CYPHERSYSTEM.SubtleCypher",
+    "CYPHERSYSTEM.SubtleFantasticCypher", "CYPHERSYSTEM.ManifestCypher", "CYPHERSYSTEM.ManifestFantasticCypher"]) {
     const value = foundry.utils.getProperty(t, key);
     if (typeof value !== "string") continue;
-    foundry.utils.setProperty(t, key, value.replace(/Cypher/g, "Bulan").replace(/cypher/g, "Bulan"));
+    foundry.utils.setProperty(t, key, value.replace(/Cyphers/g, "Items").replace(/Cypher/g, "Item").replace(/cyphers/g, "items").replace(/cypher/g, "item"));
   }
-  const limit = foundry.utils.getProperty(t, "CYPHERSYSTEM.CypherLimit");
-  if (typeof limit === "string") foundry.utils.setProperty(t, "CYPHERSYSTEM.CypherLimit", game.i18n.localize("AWAKENED.BulanLimit"));
 });
 
 function rerenderOpenSheets() {
@@ -1153,7 +1157,7 @@ Hooks.once("setup", () => {
       // Open on the tab this person last used on this sheet (once per opening).
       if (!this._adTabRestored && this._tabs?.[0]) {
         this._adTabRestored = true;
-        const tabs = ["abilities", "skills", "combat", "notes", "description", "tags", "settings"];
+        const tabs = ["abilities", "skills", "notes", "description", "tags", "settings"];
         if (tabs.includes(view.tab)) this._tabs[0].active = view.tab;
       }
       return data;

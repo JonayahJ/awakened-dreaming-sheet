@@ -208,6 +208,10 @@
       </ul>
     </div>
 
+    {{#if actor.system.settings.combat.lastingDamage.active}}
+      <div class="ad-lasting">{{> systems/cyphersystem/templates/tabs/combat-tab/lasting-damage.html}}</div>
+    {{/if}}
+
     <div class="ad-recovery">
       <div class="ad-recovery-head">
         <span class="ad-mini-title">{{localize 'AWAKENED.Recovery'}}</span>

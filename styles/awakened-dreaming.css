@@ -1498,3 +1498,12 @@
 .awakened-dreaming-picker .ad-pick-new-row { display: flex; gap: 6px; }
 .awakened-dreaming-picker .ad-pick-new-row input { flex: 1 1 auto; }
 .awakened-dreaming-picker .ad-pick-new-row select { flex: 0 0 auto; }
+
+/* ---------- v1.16: Equipment tab sections ---------- */
+.awakened-dreaming .ad-inv-section { margin: 0 0 12px; padding: 6px 10px 4px; border: 1px solid var(--ad-gold-faint); border-top: 2px solid var(--ad-gold); border-radius: 4px; background: rgba(255,251,240,.45); }
+.awakened-dreaming .ad-inv-head { margin: 2px 0 4px; padding: 0; border: none; font-family: var(--ad-caps); font-weight: 700; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; color: var(--ad-crimson); }
+.awakened-dreaming .ad-inv-head i { color: var(--ad-gold); margin-right: 4px; }
+.awakened-dreaming .ad-pane-inventory .item-cypher-limit-label, .awakened-dreaming .ad-pane-inventory .item-cypher-limit { display: none; }
+.awakened-dreaming .ad-p3-bulans .ad-bulan-limit { width: 34px; height: 20px; padding: 0 2px; text-align: center; border: none; border-bottom: 1.5px solid rgba(251,243,223,.7); border-radius: 0; background: transparent; color: #fbf3df; font-family: var(--ad-caps); font-size: 14px; font-weight: 700; }
+.awakened-dreaming .ad-p3-bulans .ad-bulan-limit:focus { background: rgba(255,255,255,.15); box-shadow: none; }
+.awakened-dreaming .ad-lasting { margin-top: 2px; }

@@ -95,7 +95,6 @@
     {{#unless sheetSettings.isLimited}}
       <a class="item" data-tab="abilities"><i class="fa-solid fa-sparkles"></i> {{localize 'CYPHERSYSTEM.Abilities'}}</a>
       <a class="item" data-tab="skills"><i class="fa-solid fa-scroll"></i> {{localize 'CYPHERSYSTEM.Skills'}}</a>
-      <a class="item" data-tab="combat"><i class="fa-solid fa-swords"></i> {{localize 'CYPHERSYSTEM.Combat'}}</a>
       <a class="item ad-tab-icon" data-tab="notes" title="{{localize 'CYPHERSYSTEM.Notes'}}"><i class="fa-regular fa-feather-pointed"></i></a>
     {{/unless}}
     {{#if sheetSettings.isLimited}}
@@ -122,13 +121,6 @@
       {{> systems/cyphersystem/templates/tabs/skills-tab/power-shifts.html}}
     </div>
 
-    <div class="tab combat" data-group="primary" data-tab="combat">
-      {{!-- Damage track and recovery live in the header (house rules) --}}
-      {{> systems/cyphersystem/templates/tabs/combat-tab/lasting-damage.html}}
-      {{> systems/cyphersystem/templates/tabs/combat-tab/attacks.html}}
-      {{> systems/cyphersystem/templates/tabs/combat-tab/ammo.html}}
-      {{> systems/cyphersystem/templates/tabs/combat-tab/armor.html}}
-    </div>
 
 
     <div class="tab abilities" data-group="primary" data-tab="abilities">

@@ -33,10 +33,10 @@
 <section class="ad-page3 ad-gear-{{ad.gearTab}}">
   <nav class="ad-p3-tabs">
     <a class="{{#if (eq ad.gearTab 'worn')}}active{{/if}}" data-ad-gear-tab="worn"><i class="fa-solid fa-person"></i> {{localize 'AWAKENED.Worn'}}</a>
-    <a class="{{#if (eq ad.gearTab 'inventory')}}active{{/if}}" data-ad-gear-tab="inventory"><i class="fa-solid fa-box-open"></i> {{localize 'AWAKENED.Inventory'}}</a>
+    <a class="{{#if (eq ad.gearTab 'inventory')}}active{{/if}}" data-ad-gear-tab="inventory"><i class="fa-solid fa-sack"></i> {{localize 'AWAKENED.EquipmentTab'}}</a>
     <span class="ad-p3-bulans {{#if ad.gear.bulans.over}}over{{/if}}" title="{{localize 'AWAKENED.BulanCountHint'}}">
       <i class="fa-solid {{#if ad.gear.bulans.over}}fa-triangle-exclamation{{else}}fa-gem{{/if}}"></i>
-      {{localize 'AWAKENED.ActiveBulans'}} <b>{{ad.gear.bulans.active}}</b>{{#if ad.gear.bulans.limit}} / {{ad.gear.bulans.limit}}{{/if}}
+      {{localize 'AWAKENED.ActiveBulans'}} <b>{{ad.gear.bulans.active}}</b> / <input class="ad-bulan-limit ad-select-on-focus" type="number" min="0" name="system.equipment.cypherLimit" value="{{actor.system.equipment.cypherLimit}}" title="{{localize 'AWAKENED.BulanLimit'}}" {{sheetSettings.disabledStaticStats}} />
       <em>· {{#if ad.gear.bulans.over}}{{localize 'AWAKENED.OverLimit'}}{{else}}{{ad.gear.bulans.carried}} {{localize 'AWAKENED.BulansCarried'}}{{/if}}</em>
     </span>
   </nav>
@@ -135,10 +135,19 @@
   </div>
 
   <div class="ad-gear-pane ad-pane-inventory">
+    <section class="ad-inv-section">
+      <h3 class="ad-inv-head"><i class="fa-solid fa-swords"></i> {{localize 'AWAKENED.InvWeaponsArmor'}}</h3>
+      {{> systems/cyphersystem/templates/tabs/combat-tab/attacks.html}}
+      {{> systems/cyphersystem/templates/tabs/combat-tab/armor.html}}
+      {{> systems/cyphersystem/templates/tabs/combat-tab/ammo.html}}
+    </section>
+    <section class="ad-inv-section">
+      <h3 class="ad-inv-head"><i class="fa-solid fa-sack"></i> {{localize 'AWAKENED.InvGear'}}</h3>
       {{> systems/cyphersystem/templates/tabs/equipment-tab/equipment.html}}
-      {{#if actor.system.settings.equipment.cyphers.active}}
-        {{> systems/cyphersystem/templates/tabs/equipment-tab/cyphers.html}}
-      {{/if}}
+    </section>
+    <section class="ad-inv-section">
+      <h3 class="ad-inv-head"><i class="fa-solid fa-box-open"></i> {{localize 'AWAKENED.InvMisc'}}</h3>
+      {{> systems/cyphersystem/templates/tabs/equipment-tab/cyphers.html}}
       {{#if actor.system.settings.equipment.artifacts.active}}
         {{> systems/cyphersystem/templates/tabs/equipment-tab/artifacts.html}}
       {{/if}}
@@ -148,5 +157,6 @@
       {{#if actor.system.settings.equipment.materials.active}}
         {{> systems/cyphersystem/templates/tabs/equipment-tab/materials.html}}
       {{/if}}
+    </section>
   </div>
 </section>
