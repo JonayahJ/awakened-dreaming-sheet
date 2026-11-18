@@ -456,6 +456,47 @@ async function equipFromPicker(actor, slot) {
   if (res.action === "equip" && res.id && actor.items.get(res.id)) await setWorn(actor, slot, res.id, true);
 }
 
+/* Moving an item between Equipment sections means remaking it as another kind of item, because
+   the Cypher System can't change an item's kind. Name, picture, description, price, Bulan state
+   and worn slots carry over; kind-specific numbers (rating, damage, level) start fresh. */
+const MOVE_TARGETS = {attack: "AWAKENED.TypeWeapon", armor: "AWAKENED.TypeArmor", equipment: "AWAKENED.InvGear", cypher: "AWAKENED.InvMisc",
+  artifact: "AWAKENED.TypeArtifact", oddity: "AWAKENED.TypeOddity"};
+
+async function moveItemKind(actor, item) {
+  const s = actor.system.settings?.equipment ?? {};
+  const targets = Object.entries(MOVE_TARGETS).filter(([k]) => k !== item.type
+    && (k !== "artifact" || s.artifacts?.active) && (k !== "oddity" || s.oddities?.active));
+  const esc = v => foundry.utils.escapeHTML ? foundry.utils.escapeHTML(v) : v;
+  const content = `<div class="ad-picker"><p class="ad-pick-cap">${game.i18n.format("AWAKENED.MoveTo", {name: esc(item.name)})}</p>
+    ${targets.map(([k, v], i) => `<label class="ad-pick-row"><input type="radio" name="adMove" value="${k}" ${i === 0 ? "checked" : ""}/><span class="ad-pick-name">${game.i18n.localize(v)}</span></label>`).join("")}
+    <p class="ad-pick-none">${game.i18n.localize("AWAKENED.MoveHint")}</p></div>`;
+  const type = await foundry.applications.api.DialogV2.wait({
+    window: {title: game.i18n.localize("AWAKENED.MoveTitle")},
+    classes: ["awakened-dreaming-picker"],
+    content, rejectClose: false,
+    buttons: [
+      {action: "move", label: game.i18n.localize("AWAKENED.Move"), icon: "fas fa-right-left", default: true,
+        callback: (event, button) => button.form?.elements?.adMove?.value || null},
+      {action: "cancel", label: game.i18n.localize("Cancel"), icon: "fas fa-xmark", callback: () => null}
+    ]
+  });
+  if (!type || typeof type !== "string" || type === item.type) return;
+  const src = item.toObject();
+  const data = {name: src.name, img: src.img, type, flags: src.flags ?? {},
+    system: {description: src.system?.description ?? "", price: src.system?.price}};
+  if (type === "equipment") data.system.basic = {quantity: Number(src.system?.basic?.quantity) || 1};
+  if (data.system.price === undefined) delete data.system.price;
+  const [created] = await actor.createEmbeddedDocuments("Item", [data], {adMoving: true});
+  if (!created) return;
+  const eq = readEquip(actor);
+  const swap = id => (id === item.id ? created.id : id);
+  for (const k of SINGLE_SLOTS) eq[k] = swap(eq[k]);
+  for (const k of MULTI_SLOTS) eq[k] = eq[k].map(swap);
+  await actor.deleteEmbeddedDocuments("Item", [item.id]);
+  await saveEquip(actor, eq);
+  created.sheet?.render(true);
+}
+
 /* House rule: armor's Speed cost only counts for classes the character isn't trained in. */
 function adjustArmorCost(actor) {
   if (actor?.type !== "pc") return;
@@ -664,7 +705,7 @@ Hooks.on("updateActor", (actor, changes) => {
 /* An item added to a character that already has body parts ticked (for example from a compendium)
    goes on those parts if they're free. */
 Hooks.on("createItem", async (item, options, userId) => {
-  if (userId !== game.user.id) return;
+  if (userId !== game.user.id || options?.adMoving) return;
   const actor = item.parent;
   if (actor?.documentName !== "Actor" || actor.type !== "pc" || !GEAR_TYPES.includes(item.type)) return;
   const slots = itemSlots(item);
@@ -1354,6 +1395,17 @@ Hooks.once("setup", () => {
         el.find(`[data-ad-gear-tab="${tab}"]`).addClass("active");
         this._adSaveView({gearTab: tab});
       });
+
+      // Equipment tab: a "Move to" button on every item, to switch its section.
+      if (this.isEditable) {
+        html.find(".ad-pane-inventory li.item[data-item-id]").each((_, li) => {
+          const item = actor.items.get(li.dataset.itemId);
+          if (!item || !GEAR_TYPES.includes(item.type)) return;
+          const btn = $(`<a class="item-control ad-move" title="${game.i18n.localize("AWAKENED.MoveTitle")}"><i class="fa-solid fa-right-left"></i></a>`);
+          btn.on("click", ev => { ev.preventDefault(); ev.stopPropagation(); moveItemKind(actor, item); });
+          $(li).find(".item-controls").first().prepend(btn);
+        });
+      }
 
       // Worn slots: click a slot (or its dot on the figure) to choose what goes there.
       html.find("[data-ad-slot]").on("click", event => {

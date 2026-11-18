@@ -234,5 +234,10 @@
   "AWAKENED.StressPointsHint": "Stress points. Every 3 points is usually one level of Stress.",
   "AWAKENED.StressLevelsHint": "Each level of Stress makes tasks one step harder.",
   "AWAKENED.StressEffect": "Each level of Stress makes all tasks one step harder (the Cypher System's roll window applies this).",
-  "AWAKENED.SupernaturalStress": "Supernatural stress"
+  "AWAKENED.SupernaturalStress": "Supernatural stress",
+  "AWAKENED.MoveTitle": "Move to another section",
+  "AWAKENED.MoveTo": "Move {name} to:",
+  "AWAKENED.Move": "Move",
+  "AWAKENED.MoveHint": "It keeps its name, picture, description, price, Bulan state and where it's worn. Numbers that belong to one kind of item (armor rating, damage, level) start fresh, so open it afterward to fill them in.",
+  "AWAKENED.TypeOddity": "Oddity"
 }
