@@ -198,7 +198,7 @@
   "AWAKENED.ActiveBulans": "Active Bulans",
   "AWAKENED.BulansCarried": "Bulans carried",
   "AWAKENED.OverLimit": "over the limit",
-  "AWAKENED.BulanCountHint": "Only Active Bulans count against the Bulan limit. Type the limit in the box.",
+  "AWAKENED.BulanCountHint": "Only Active Bulans count against the Bulan limit (set on page I).",
   "AWAKENED.LegendActiveBulan": "Active Bulan",
   "AWAKENED.LegendInactiveBulan": "Inactive Bulan",
   "AWAKENED.BulanOverTitle": "Over the Bulan limit",
@@ -256,5 +256,8 @@
   "AWAKENED.TempArmorNote": "Why? (e.g. Stone Skin +2, Rust spell −1)",
   "AWAKENED.TempArmorReset": "Clear temporary armor",
   "AWAKENED.TempShort": "temp",
-  "AWAKENED.TempArmorLabel": "Includes {value} temporary armor {note}"
+  "AWAKENED.TempArmorLabel": "Includes {value} temporary armor {note}",
+  "AWAKENED.Bulans": "Bulans",
+  "AWAKENED.BulanBadgeHint": "Active Bulans / Bulan limit. Type the limit in the box. Only Active Bulans count.",
+  "AWAKENED.BulanLimitWhere": "The Bulan limit is set on page I, in the Bulans shield."
 }

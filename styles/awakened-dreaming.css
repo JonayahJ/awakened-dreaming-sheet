@@ -1559,3 +1559,12 @@
 .ad-gear-editor .ad-gchip.br.on { background: #9e2b23; border-color: #9e2b23; color: #fbf3df; }
 .awakened-dreaming .ad-doll-spots .spot.broken { fill: #9e2b23; }
 .awakened-dreaming .ad-slot.broken { border-left-color: #9e2b23; }
+
+/* ---------- v1.18.1: Bulans shield on page I (active / limit) ---------- */
+.awakened-dreaming .ad-badge-bulan .ad-bulan-val { display: inline-flex; align-items: baseline; justify-content: center; font-family: var(--ad-caps); color: var(--ad-violet); line-height: 1; }
+.awakened-dreaming .ad-identity-main .ad-badge-bulan .ad-bulan-val b { font-size: 28px; }
+.awakened-dreaming .ad-badge-bulan .ad-of { margin: 0 1px; font-size: 16px; color: var(--ad-ink-soft); }
+.cyphersystem.awakened-dreaming .ad-identity-main .ad-badge-bulan .ad-bulan-val input { width: 26px; height: 24px; line-height: 24px; padding: 0; font-size: 17px; text-align: left; color: var(--ad-ink-soft); background: transparent; border: none; border-bottom: 1px dotted var(--ad-gold); border-radius: 0; }
+.awakened-dreaming .ad-badge-bulan.over .ad-bulan-val b { color: #c0392b; }
+.awakened-dreaming .ad-badge-bulan.over .ad-badge-label { color: #9e2b23; }
+.awakened-dreaming .ad-bulan-limit-ro { font-family: var(--ad-caps); font-size: 14px; font-weight: 700; }

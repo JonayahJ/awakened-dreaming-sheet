@@ -1448,6 +1448,11 @@ Hooks.once("setup", () => {
         this._adSaveView({page});
       });
 
+      // The Bulan limit is edited only on page I. The Cypher System's own limit box (in the
+      // Miscellaneous list) is removed, because two boxes for one field cancel each other out.
+      html.find("input.input-cypher-limit").closest(".item-cypher-limit").remove();
+      html.find(".item-cypher-limit-label").remove();
+
       // Settings that contradict the house rules are taken off the Settings tab.
       for (const name of HIDDEN_SETTING_FIELDS) {
         html.find(`.tab.settings [name="${name}"]`).closest("li.item-settings").remove();
@@ -2036,6 +2041,7 @@ function buildSheetData(actor, data) {
     additionalPool,
     damage: {states: damageStates, effect: damageEffect, state},
     conditions,
+    bulans: bulanCounts(actor),
     recovery: (() => {
       const formula = recoveryFormula(actor);
       const parsed = parseRecovery(formula) ?? {count: 1, size: 4, bonus: 0};

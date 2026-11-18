@@ -102,6 +102,10 @@
           <span class="ad-badge-label">{{localize 'AWAKENED.Armor'}}</span>
           {{#if ad.armor.temp}}<span class="ad-badge-temp {{#if ad.armor.tempDown}}down{{/if}}">{{ad.armor.tempShort}}</span>{{/if}}
         </div>
+        <div class="ad-badge ad-badge-bulan {{#if ad.bulans.over}}over{{/if}}" title="{{localize 'AWAKENED.BulanBadgeHint'}}">
+          <span class="ad-bulan-val"><b>{{ad.bulans.active}}</b><span class="ad-of">/</span><input class="ad-select-on-focus" type="number" min="0" name="system.equipment.cypherLimit" value="{{actor.system.equipment.cypherLimit}}" placeholder="–" /></span>
+          <span class="ad-badge-label">{{localize 'AWAKENED.Bulans'}}</span>
+        </div>
       </div>
     {{/unless}}
   </div>

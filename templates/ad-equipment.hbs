@@ -45,7 +45,7 @@
     <a class="{{#if (eq ad.gearTab 'inventory')}}active{{/if}}" data-ad-gear-tab="inventory"><i class="fa-solid fa-sack"></i> {{localize 'AWAKENED.EquipmentTab'}}</a>
     <span class="ad-p3-bulans {{#if ad.gear.bulans.over}}over{{/if}}" title="{{localize 'AWAKENED.BulanCountHint'}}">
       <i class="fa-solid {{#if ad.gear.bulans.over}}fa-triangle-exclamation{{else}}fa-gem{{/if}}"></i>
-      {{localize 'AWAKENED.ActiveBulans'}} <b>{{ad.gear.bulans.active}}</b> / <input class="ad-bulan-limit ad-select-on-focus" type="number" min="0" name="system.equipment.cypherLimit" value="{{actor.system.equipment.cypherLimit}}" title="{{localize 'AWAKENED.BulanLimit'}}" {{sheetSettings.disabledStaticStats}} />
+      {{localize 'AWAKENED.ActiveBulans'}} <b>{{ad.gear.bulans.active}}</b> / <span class="ad-bulan-limit-ro" title="{{localize 'AWAKENED.BulanLimitWhere'}}">{{#if ad.gear.bulans.limit}}{{ad.gear.bulans.limit}}{{else}}–{{/if}}</span>
       <em>· {{#if ad.gear.bulans.over}}{{localize 'AWAKENED.OverLimit'}}{{else}}{{ad.gear.bulans.carried}} {{localize 'AWAKENED.BulansCarried'}}{{/if}}</em>
     </span>
   </nav>
