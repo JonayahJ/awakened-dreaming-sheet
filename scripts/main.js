@@ -422,6 +422,16 @@ Hooks.once("init", () => {
     default: 1
   });
 
+  game.settings.register(MODULE_ID, "currencyNames", {
+    name: "AWAKENED.SettingCurrency",
+    hint: "AWAKENED.SettingCurrencyHint",
+    scope: "world",
+    config: true,
+    type: String,
+    default: "Ket, Pilt, Peak, Throne",
+    onChange: () => rerenderOpenSheets()
+  });
+
   game.settings.register(MODULE_ID, "bulanNames", {
     name: "AWAKENED.SettingBulans",
     hint: "AWAKENED.SettingBulansHint",
@@ -1021,7 +1031,20 @@ function buildSheetData(actor, data) {
     ? {label: general.additionalSentence.label || loc("CYPHERSYSTEM.AdditionalSentence"), value: sys.basic.additionalSentence}
     : null;
 
+  // Money: up to six denominations from the world setting, lowest first. Amounts use the
+  // Cypher System's own currency fields (quantity1 = lowest), so nothing is stored twice.
+  const currencyNames = String(game.settings.get(MODULE_ID, "currencyNames") ?? "")
+    .split(",").map(n => n.trim()).filter(Boolean).slice(0, 6);
+  const cur = sys.settings.equipment?.currency ?? {};
+  const currency = currencyNames.map((name, i) => ({
+    name,
+    tier: i,
+    field: `system.settings.equipment.currency.quantity${i + 1}`,
+    value: cur[`quantity${i + 1}`] ?? 0
+  }));
+
   return {
+    currency,
     useCustomHeader,
     isNPC: !!flags.npc,
     isGM: !!game.user?.isGM,

@@ -1250,3 +1250,33 @@
 .cyphersystem.awakened-dreaming .ad-portrait.profile-img-container { height: auto; min-height: 236px; align-self: stretch; display: flex; }
 .awakened-dreaming .ad-portrait-frame { height: auto; flex: 1 1 auto; }
 .cyphersystem.awakened-dreaming .ad-portrait-frame img.profile-img { height: 100%; }
+
+/* ---------- Purse (Equipment tab) ---------- */
+.awakened-dreaming .ad-purse {
+  display: flex; align-items: center; gap: 14px;
+  margin: 8px 4px 10px; padding: 8px 12px;
+  border: 1px solid var(--ad-gold-faint); border-top: 2px solid var(--ad-gold); border-radius: 3px;
+  background: rgba(255, 251, 240, 0.55);
+}
+.awakened-dreaming .ad-purse .ad-mini-title i { color: var(--ad-gold); margin-right: 3px; }
+.awakened-dreaming .ad-coins { flex: 1 1 auto; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
+.awakened-dreaming .ad-coin { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.awakened-dreaming .ad-coin-face {
+  flex: 0 0 auto; min-width: 58px; height: 26px; padding: 0 10px; border-radius: 13px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: var(--ad-caps); font-weight: 700; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #2b1d13; border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 2px rgba(43, 29, 19, 0.25);
+}
+.awakened-dreaming .ad-coin-0 .ad-coin-face { background: linear-gradient(180deg, #d9a77a, #a8683d); }
+.awakened-dreaming .ad-coin-1 .ad-coin-face { background: linear-gradient(180deg, #f1f1f1, #b9bcc2); }
+.awakened-dreaming .ad-coin-2 .ad-coin-face { background: linear-gradient(180deg, #f6dc8c, #c99a2e); }
+.awakened-dreaming .ad-coin-3 .ad-coin-face { background: linear-gradient(180deg, #8f78d6, #3a2f70); color: #f4e8c8; }
+.awakened-dreaming .ad-coin-4 .ad-coin-face { background: linear-gradient(180deg, #e7f2f7, #9fb7c4); }
+.awakened-dreaming .ad-coin-5 .ad-coin-face { background: linear-gradient(180deg, #2b2b2b, #0e0e0e); color: #dcbd6e; }
+.cyphersystem.awakened-dreaming .ad-coin input {
+  width: 100%; min-width: 0; height: 26px; padding: 0 2px;
+  border: none; border-bottom: 1px solid rgba(43, 29, 19, 0.35); border-radius: 0; background: transparent;
+  font-family: var(--ad-caps); font-weight: 700; font-size: 16px; text-align: center; color: var(--ad-ink); box-shadow: none;
+}
+.awakened-dreaming .ad-purse .ad-mini-title { white-space: nowrap; flex: 0 0 auto; }

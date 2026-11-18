@@ -121,5 +121,8 @@
   "AWAKENED.ChoicePayTitle": "Pay {cost} (you'll pick the pool)",
   "AWAKENED.NPC": "NPC",
   "AWAKENED.NPCLong": "Non-player character",
-  "AWAKENED.NPCToggleHint": "Mark this character as an NPC (only the GM sees this box)."
+  "AWAKENED.NPCToggleHint": "Mark this character as an NPC (only the GM sees this box).",
+  "AWAKENED.Purse": "Purse",
+  "AWAKENED.SettingCurrency": "Currency names",
+  "AWAKENED.SettingCurrencyHint": "The money shown on the Equipment tab, lowest to highest, separated by commas (up to six)."
 }

@@ -81,7 +81,19 @@
     </div>
 
     <div class="tab items" data-group="primary" data-tab="items">
-      {{> systems/cyphersystem/templates/tabs/equipment-tab/currency.html}}
+      {{#if ad.currency.length}}
+        <div class="ad-purse">
+          <span class="ad-mini-title"><i class="fa-solid fa-coins"></i> {{localize 'AWAKENED.Purse'}}</span>
+          <div class="ad-coins">
+            {{#each ad.currency}}
+              <label class="ad-coin ad-coin-{{tier}}">
+                <span class="ad-coin-face">{{name}}</span>
+                <input class="ad-select-on-focus" type="number" min="0" name="{{field}}" value="{{value}}" />
+              </label>
+            {{/each}}
+          </div>
+        </div>
+      {{/if}}
       {{> systems/cyphersystem/templates/tabs/equipment-tab/equipment.html}}
       {{#if actor.system.settings.equipment.cyphers.active}}
         {{> systems/cyphersystem/templates/tabs/equipment-tab/cyphers.html}}
