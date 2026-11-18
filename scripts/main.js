@@ -52,6 +52,13 @@ function getSplitCost(item) {
   if (cost > 0 && key) out[key] = cost;
   return out;
 }
+/** "+" costs (1+, 2+ ...): the cost is a minimum and the player chooses how much to pay. */
+function isPlusCost(item) {
+  if (item?.type !== "ability") return false;
+  const f = item.flags?.[MODULE_ID]?.plus;
+  if (f !== undefined) return !!f;
+  return String(item.system?.basic?.cost ?? "").trim().endsWith("+");
+}
 function isPassive(item) {
   return item?.type === "ability" && !!item.flags?.[MODULE_ID]?.passive;
 }
@@ -61,26 +68,28 @@ function isChoiceCost(item) {
   const s = getSplitCost(item);
   return SPLIT_POOLS.filter(k => s[k] > 0).length > 1;
 }
-function choiceCostLabel(split) {
+function choiceCostLabel(split, plus = false) {
   const or = ` ${game.i18n.localize("AWAKENED.Or")} `;
   return SPLIT_POOLS.filter(k => split[k] > 0)
-    .map(k => `${split[k]} ${game.i18n.localize(`CYPHERSYSTEM.${POOL_NAME[k]}`)}`).join(or);
+    .map(k => `${split[k]}${plus ? "+" : ""} ${game.i18n.localize(`CYPHERSYSTEM.${POOL_NAME[k]}`)}`).join(or);
 }
 function isSplitCost(item) {
   if (item.type !== "ability" || isChoiceCost(item)) return false;
   const s = getSplitCost(item);
   return SPLIT_POOLS.filter(k => s[k] > 0).length > 1;
 }
-function splitCostLabel(split) {
+function splitCostLabel(split, plus = false) {
   return SPLIT_POOLS.filter(k => split[k] > 0)
-    .map(k => `${split[k]} ${game.i18n.localize(`CYPHERSYSTEM.${POOL_NAME[k]}`)}`).join(", ");
+    .map(k => `${split[k]}${plus ? "+" : ""} ${game.i18n.localize(`CYPHERSYSTEM.${POOL_NAME[k]}`)}`).join(", ");
 }
-async function setSplitCost(item, split, choose) {
+async function setSplitCost(item, split, choose, plus) {
   const used = SPLIT_POOLS.filter(k => split[k] > 0);
   const update = {[`flags.${MODULE_ID}.splitCost`]: split};
   if (choose !== undefined) update[`flags.${MODULE_ID}.choosePool`] = !!choose;
+  if (plus !== undefined) update[`flags.${MODULE_ID}.plus`] = !!plus;
+  const isPlus = plus !== undefined ? !!plus : isPlusCost(item);
   if (used.length === 1) {
-    update["system.basic.cost"] = String(split[used[0]]);
+    update["system.basic.cost"] = `${split[used[0]]}${isPlus ? "+" : ""}`;
     update["system.basic.pool"] = POOL_NAME[used[0]];
   } else if (used.length === 0) {
     update["system.basic.cost"] = "0";
@@ -167,7 +176,11 @@ function xpNote(result) {
 }
 
 async function paySplitCost(actor, item) {
-  const split = getSplitCost(item);
+  let split = getSplitCost(item);
+  if (isPlusCost(item)) {
+    split = await askAmounts(item, split);
+    if (!split) return;
+  }
   const net = {might: 0, speed: 0, intellect: 0};
   for (const k of SPLIT_POOLS) {
     if (split[k]) net[k] = Math.max(0, split[k] - (Number(actor.system.pools[k].edge) || 0));
@@ -192,19 +205,21 @@ function isAnyPool(item) {
 function stackedCost(actor, ids) {
   const items = ids.map(id => actor.items.get(id)).filter(i => i && i.type === "ability");
   const chosen = getFlags(actor).stackPools ?? {};
+  const amounts = getFlags(actor).stackAmounts ?? {};
   const total = {might: 0, speed: 0, intellect: 0};
   const skipped = [];
   for (const item of items) {
     if (isChoiceCost(item)) {
       const k = chosen[item.id];
       const split = getSplitCost(item);
-      if (SPLIT_POOLS.includes(k) && split[k] > 0) total[k] += split[k];
+      if (SPLIT_POOLS.includes(k) && split[k] > 0) total[k] += Math.max(split[k], Number(amounts[item.id]?.[k]) || 0);
       else skipped.push(item.name);
       continue;
     }
     if (isAnyPool(item)) {
       const k = chosen[item.id];
-      if (SPLIT_POOLS.includes(k)) total[k] += parseInt(item.system.basic.cost) || 0;
+      const minimum = parseInt(item.system.basic.cost) || 0;
+      if (SPLIT_POOLS.includes(k)) total[k] += Math.max(minimum, Number(amounts[item.id]?.[k]) || 0);
       else skipped.push(item.name);
       continue;
     }
@@ -212,7 +227,7 @@ function stackedCost(actor, ids) {
     const any = SPLIT_POOLS.some(k => split[k] > 0);
     const raw = parseInt(item.system.basic.cost) || 0;
     if (!any && raw > 0) skipped.push(item.name); // XP costs can't be stacked by pool
-    for (const k of SPLIT_POOLS) total[k] += split[k];
+    for (const k of SPLIT_POOLS) total[k] += split[k] > 0 ? Math.max(split[k], Number(amounts[item.id]?.[k]) || 0) : 0;
   }
   const rows = SPLIT_POOLS.filter(k => total[k] > 0).map(k => {
     const pool = actor.system.pools[k];
@@ -223,17 +238,60 @@ function stackedCost(actor, ids) {
   return {items, total, rows, skipped};
 }
 
+/**
+ * "+" costs: ask how many points to spend from each pool. `base` holds the minimum per pool;
+ * only pools with a minimum above 0 are asked about. Returns {might, speed, intellect} or null.
+ */
+async function askAmounts(item, base) {
+  const pools = SPLIT_POOLS.filter(k => base[k] > 0);
+  const title = game.i18n.format("AWAKENED.PlusTitle", {name: item.name});
+  const rows = pools.map(k => `
+    <div class="form-group">
+      <label>${game.i18n.localize(`CYPHERSYSTEM.${POOL_NAME[k]}`)} <small>(${game.i18n.format("AWAKENED.PlusMin", {n: base[k]})})</small></label>
+      <input type="number" name="${k}" min="${base[k]}" step="1" value="${base[k]}" autofocus />
+    </div>`).join("");
+  const content = `<p>${game.i18n.format("AWAKENED.PlusText", {name: item.name})}</p>${rows}`;
+  const read = form => {
+    const out = {might: 0, speed: 0, intellect: 0};
+    for (const k of pools) out[k] = Math.max(base[k], parseInt(form.elements[k]?.value) || base[k]);
+    return out;
+  };
+  const DialogV2 = foundry.applications?.api?.DialogV2;
+  if (DialogV2) {
+    return DialogV2.wait({
+      window: {title},
+      content,
+      buttons: [
+        {action: "ok", label: game.i18n.localize("AWAKENED.PlusOK"), default: true, callback: (event, button) => read(button.form)},
+        {action: "cancel", label: game.i18n.localize("AWAKENED.Cancel"), callback: () => null}
+      ],
+      rejectClose: false
+    }).then(r => (r && typeof r === "object") ? r : null);
+  }
+  return new Promise(resolve => {
+    new Dialog({
+      title, content,
+      buttons: {
+        ok: {label: game.i18n.localize("AWAKENED.PlusOK"), callback: html => resolve(read(html[0].querySelector("form") ?? {elements: Object.fromEntries(pools.map(k => [k, html[0].querySelector(`[name=${k}]`)]))}))},
+        cancel: {label: game.i18n.localize("AWAKENED.Cancel"), callback: () => resolve(null)}
+      },
+      default: "ok",
+      close: () => resolve(null)
+    }).render(true);
+  });
+}
+
 /** Ask which pool an "Any Pool" ability should draw from. Returns "might" | "speed" | "intellect" | null. */
 async function choosePool(item, options = SPLIT_POOLS) {
   const split = isChoiceCost(item) ? getSplitCost(item) : null;
   const label = k => {
     const pool = game.i18n.localize(`CYPHERSYSTEM.${POOL_NAME[k]}`);
-    return split ? `${split[k]} ${pool}` : pool;
+    return split ? `${split[k]}${isPlusCost(item) ? "+" : ""} ${pool}` : pool;
   };
   const DialogV2 = foundry.applications?.api?.DialogV2;
   const title = game.i18n.format("AWAKENED.ChoosePoolTitle", {name: item.name});
   const content = split
-    ? `<p>${game.i18n.format("AWAKENED.ChooseOneText", {name: item.name, options: choiceCostLabel(split)})}</p>`
+    ? `<p>${game.i18n.format("AWAKENED.ChooseOneText", {name: item.name, options: choiceCostLabel(split, isPlusCost(item))})}</p>`
     : `<p>${game.i18n.format("AWAKENED.ChoosePoolText", {name: item.name, cost: item.system.basic.cost})}</p>`;
   if (DialogV2) {
     const result = await DialogV2.wait({
@@ -257,8 +315,14 @@ async function payChoiceCost(actor, item) {
   const options = SPLIT_POOLS.filter(k => split[k] > 0);
   const k = await choosePool(item, options);
   if (!k) return;
+  let amount = split[k];
+  if (isPlusCost(item)) {
+    const picked = await askAmounts(item, {might: 0, speed: 0, intellect: 0, [k]: split[k]});
+    if (!picked) return;
+    amount = picked[k];
+  }
   const net = {might: 0, speed: 0, intellect: 0};
-  net[k] = Math.max(0, split[k] - (Number(actor.system.pools[k].edge) || 0));
+  net[k] = Math.max(0, amount - (Number(actor.system.pools[k].edge) || 0));
   const result = await resolvePayment(actor, net);
   if (!result) return;
   await actor.update(result.update);
@@ -277,7 +341,7 @@ async function payStack(actor) {
   for (const r of rows) net[r.key] = r.net;
   const result = await resolvePayment(actor, net);
   if (!result) return;
-  await actor.update({...result.update, [`${FLAG}.stack`]: [], [`${FLAG}.-=stackPools`]: null});
+  await actor.update({...result.update, [`${FLAG}.stack`]: [], [`${FLAG}.-=stackPools`]: null, [`${FLAG}.-=stackAmounts`]: null});
   const esc = t => foundry.utils.escapeHTML?.(t) ?? t;
   const lines = rows.map(r => `<li>${r.label}: ${r.total} − ${r.edge} ${game.i18n.localize("AWAKENED.Edge")} = <strong>${r.net}</strong></li>`).join("");
   const note = skipped.length ? `<p><em>${game.i18n.format("AWAKENED.StackSkipped", {names: skipped.map(esc).join(", ")})}</em></p>` : "";
@@ -339,6 +403,10 @@ Hooks.on("renderItemSheet", (app, html) => {
         <input type="checkbox" data-ad-choose ${chooseOn ? "checked" : ""} ${disabled} />
         <span>${game.i18n.localize("AWAKENED.ChooseOneToggle")}</span>
       </label>
+      <label class="ad-choose-toggle">
+        <input type="checkbox" data-ad-plus ${isPlusCost(item) ? "checked" : ""} ${disabled} />
+        <span>${game.i18n.localize("AWAKENED.PlusToggle")}</span>
+      </label>
       <div class="ad-split-hint">${game.i18n.localize(chooseOn ? "AWAKENED.ChooseOneHint" : "AWAKENED.SplitCostHint")}</div>
     </div>`);
   costInput.closest(".resources").replaceWith(editor);
@@ -348,8 +416,14 @@ Hooks.on("renderItemSheet", (app, html) => {
     const next = {};
     editor.find("input[data-ad-split]").each((_, el) => { next[el.dataset.adSplit] = Math.max(0, parseInt(el.value) || 0); });
     const choose = editor.find("input[data-ad-choose]").prop("checked");
-    return setSplitCost(item, next, choose);
+    const plus = editor.find("input[data-ad-plus]").prop("checked");
+    return setSplitCost(item, next, choose, plus);
   };
+  editor.find("input[data-ad-plus]").on("change", ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    saveEditor();
+  });
   editor.find("input[data-ad-choose]").on("change", ev => {
     ev.preventDefault();
     ev.stopPropagation();
@@ -544,7 +618,7 @@ Hooks.once("setup", () => {
       const useAiO = (() => { try { return game.settings.get("cyphersystem", "itemMacrosUseAllInOne"); } catch (e) { return false; } })();
       html.find("li.item[data-item-id]").each((_, li) => {
         const item = actor.items.get(li.dataset.itemId);
-        if (!item || item.type !== "ability" || isSplitCost(item) || isChoiceCost(item) || useAiO) return;
+        if (!item || item.type !== "ability" || isSplitCost(item) || isChoiceCost(item) || (useAiO && !isPlusCost(item))) return;
         if (item.system.settings?.rollButton?.macroUuid) return;
         const split = getSplitCost(item);
         if (!SPLIT_POOLS.some(k => split[k] > 0)) return;
@@ -556,7 +630,7 @@ Hooks.once("setup", () => {
       html.find("li.item[data-item-id]").each((_, li) => {
         const item = actor.items.get(li.dataset.itemId);
         if (!item || !isSplitCost(item)) return;
-        const label = splitCostLabel(getSplitCost(item));
+        const label = splitCostLabel(getSplitCost(item), isPlusCost(item));
         $(li).find(".item-name .item-description").first().after(`<span class="ad-split-cost-label"> (${label})</span>`);
         // Pay each pool (minus that pool's Edge) instead of the system's single-pool payment.
         const pay = $(li).find(".item-pay");
@@ -568,7 +642,7 @@ Hooks.once("setup", () => {
       html.find("li.item[data-item-id]").each((_, li) => {
         const item = actor.items.get(li.dataset.itemId);
         if (!item || !isChoiceCost(item)) return;
-        const label = choiceCostLabel(getSplitCost(item));
+        const label = choiceCostLabel(getSplitCost(item), isPlusCost(item));
         $(li).find(".item-name .item-description").first().after(`<span class="ad-split-cost-label"> (${label})</span>`);
         const pay = $(li).find(".item-pay");
         pay.off("click").attr("title", game.i18n.format("AWAKENED.ChoicePayTitle", {cost: label}));
@@ -591,15 +665,23 @@ Hooks.once("setup", () => {
             return actor.update({[`${FLAG}.stack`]: current.filter(id => id !== item.id)});
           }
           const update = {[`${FLAG}.stack`]: [...current, item.id]};
+          const zero = {might: 0, speed: 0, intellect: 0};
+          let base = getSplitCost(item);
           if (isChoiceCost(item)) {
-            const split = getSplitCost(item);
-            const pool = await choosePool(item, SPLIT_POOLS.filter(k => split[k] > 0));
+            const pool = await choosePool(item, SPLIT_POOLS.filter(k => base[k] > 0));
             if (!pool) return;
             update[`${FLAG}.stackPools.${item.id}`] = pool;
+            base = {...zero, [pool]: base[pool]};
           } else if (isAnyPool(item)) {
             const pool = await choosePool(item);
             if (!pool) return;
             update[`${FLAG}.stackPools.${item.id}`] = pool;
+            base = {...zero, [pool]: parseInt(item.system.basic.cost) || 0};
+          }
+          if (isPlusCost(item) && SPLIT_POOLS.some(k => base[k] > 0)) {
+            const picked = await askAmounts(item, base);
+            if (!picked) return;
+            update[`${FLAG}.stackAmounts.${item.id}`] = picked;
           }
           actor.update(update);
         });
@@ -638,7 +720,15 @@ Hooks.once("setup", () => {
 
       // Stacked action tray
       html.find("[data-ad-stack-pay]").on("click", ev => { ev.preventDefault(); payStack(actor); });
-      html.find("[data-ad-stack-clear]").on("click", ev => { ev.preventDefault(); actor.update({[`${FLAG}.stack`]: [], [`${FLAG}.-=stackPools`]: null}); });
+      html.find("[data-ad-stack-clear]").on("click", ev => { ev.preventDefault(); actor.update({[`${FLAG}.stack`]: [], [`${FLAG}.-=stackPools`]: null, [`${FLAG}.-=stackAmounts`]: null}); });
+      html.find("[data-ad-stack-amount]").on("change", ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const el = ev.currentTarget;
+        const min = Number(el.min) || 0;
+        const value = Math.max(min, parseInt(el.value) || min);
+        actor.update({[`${FLAG}.stackAmounts.${el.dataset.adStackAmount}.${el.dataset.pool}`]: value});
+      });
       html.find("[data-ad-stack-pool]").on("change", ev => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -841,6 +931,32 @@ function morphedCost(cost) {
   return Math.ceil(n * 1.5);
 }
 
+/** Tray chip for one stacked ability (pool choice dropdown for "pick a pool" and Any Pool). */
+function stackChip(i, flags) {
+  const loc = key => game.i18n.localize(key);
+  const plus = isPlusCost(i);
+  if (isChoiceCost(i)) {
+    const split = getSplitCost(i);
+    const chosen = (flags.stackPools ?? {})[i.id] ?? "";
+    return {
+      id: i.id, name: i.name, anyPool: true, cost: "",
+      poolOptions: SPLIT_POOLS.filter(k => split[k] > 0).map(k => ({value: k, label: `${split[k]}${plus ? "+" : ""} ${loc(`CYPHERSYSTEM.${POOL_NAME[k]}`)}`, selected: k === chosen})),
+      unchosen: !chosen
+    };
+  }
+  if (isAnyPool(i)) {
+    const chosen = (flags.stackPools ?? {})[i.id] ?? "";
+    return {
+      id: i.id, name: i.name, anyPool: true, cost: i.system.basic.cost,
+      poolOptions: SPLIT_POOLS.map(k => ({value: k, label: loc(`CYPHERSYSTEM.${POOL_NAME[k]}`), selected: k === chosen})),
+      unchosen: !chosen
+    };
+  }
+  const split = getSplitCost(i);
+  const label = splitCostLabel(split, plus);
+  return {id: i.id, name: i.name, cost: label || (parseInt(i.system.basic.cost) ? `${i.system.basic.cost} ${i.system.basic.pool}` : "0")};
+}
+
 function buildSheetData(actor, data) {
   const sys = actor.system;
   const general = sys.settings.general;
@@ -958,7 +1074,7 @@ function buildSheetData(actor, data) {
     const ability = abilities.find(a => a.id === m.abilityId);
     const choice = ability && isChoiceCost(ability);
     const split = (ability && isSplitCost(ability)) || choice;
-    const cost = choice ? choiceCostLabel(getSplitCost(ability)) : split ? splitCostLabel(getSplitCost(ability)) : (ability?.system?.basic?.cost ?? "");
+    const cost = choice ? choiceCostLabel(getSplitCost(ability), isPlusCost(ability)) : split ? splitCostLabel(getSplitCost(ability), isPlusCost(ability)) : (ability?.system?.basic?.cost ?? "");
     const pool = split ? "" : (ability?.system?.basic?.pool ?? "");
     const attempts = Number(m.attempts) || 0;
     const successes = Math.min(MORPH_SUCCESSES, Number(m.successes) || 0);
@@ -989,26 +1105,25 @@ function buildSheetData(actor, data) {
     stack = {
       active: true,
       items: sc.items.map(i => {
-        if (isChoiceCost(i)) {
+        const chip = stackChip(i, flags);
+        // "+" costs: an amount box per pool, starting at what was chosen (never below the minimum).
+        if (isPlusCost(i)) {
           const split = getSplitCost(i);
-          const chosen = (flags.stackPools ?? {})[i.id] ?? "";
-          return {
-            id: i.id, name: i.name, anyPool: true, cost: "",
-            poolOptions: SPLIT_POOLS.filter(k => split[k] > 0).map(k => ({value: k, label: `${split[k]} ${loc(`CYPHERSYSTEM.${POOL_NAME[k]}`)}`, selected: k === chosen})),
-            unchosen: !chosen
-          };
+          const chosen = (flags.stackPools ?? {})[i.id];
+          const picked = (flags.stackAmounts ?? {})[i.id] ?? {};
+          let pools = SPLIT_POOLS.filter(k => split[k] > 0);
+          let base = split;
+          if (isChoiceCost(i)) pools = chosen ? [chosen] : [];
+          else if (isAnyPool(i)) { pools = chosen ? [chosen] : []; base = {[chosen]: parseInt(i.system.basic.cost) || 0}; }
+          chip.amounts = pools.map(k => ({
+            pool: k,
+            label: loc(`CYPHERSYSTEM.${POOL_NAME[k]}`),
+            min: base[k],
+            value: Math.max(base[k], Number(picked[k]) || 0)
+          }));
+          chip.plus = true;
         }
-        if (isAnyPool(i)) {
-          const chosen = (flags.stackPools ?? {})[i.id] ?? "";
-          return {
-            id: i.id, name: i.name, anyPool: true, cost: i.system.basic.cost,
-            poolOptions: SPLIT_POOLS.map(k => ({value: k, label: loc(`CYPHERSYSTEM.${POOL_NAME[k]}`), selected: k === chosen})),
-            unchosen: !chosen
-          };
-        }
-        const split = getSplitCost(i);
-        const label = splitCostLabel(split);
-        return {id: i.id, name: i.name, cost: label || (parseInt(i.system.basic.cost) ? `${i.system.basic.cost} ${i.system.basic.pool}` : "0")};
+        return chip;
       }),
       rows: sc.rows,
       skipped: sc.skipped.join(", "),

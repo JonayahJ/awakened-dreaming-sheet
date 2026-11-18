@@ -124,5 +124,12 @@
   "AWAKENED.NPCToggleHint": "Mark this character as an NPC (only the GM sees this box).",
   "AWAKENED.Purse": "Purse",
   "AWAKENED.SettingCurrency": "Currency names",
-  "AWAKENED.SettingCurrencyHint": "The money shown on the Equipment tab, lowest to highest, separated by commas (up to six)."
+  "AWAKENED.SettingCurrencyHint": "The money shown on the Equipment tab, lowest to highest, separated by commas (up to six).",
+  "AWAKENED.PlusToggle": "Player can pay more (the costs above are minimums, like 1+)",
+  "AWAKENED.PlusTitle": "{name}: how much?",
+  "AWAKENED.PlusText": "{name} lets you spend more than its minimum. How many points?",
+  "AWAKENED.PlusMin": "at least {n}",
+  "AWAKENED.PlusOK": "Spend",
+  "AWAKENED.Cancel": "Cancel",
+  "AWAKENED.PlusChipHint": "Points to spend (at least the minimum)"
 }

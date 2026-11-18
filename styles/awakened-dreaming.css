@@ -1280,3 +1280,12 @@
   font-family: var(--ad-caps); font-weight: 700; font-size: 16px; text-align: center; color: var(--ad-ink); box-shadow: none;
 }
 .awakened-dreaming .ad-purse .ad-mini-title { white-space: nowrap; flex: 0 0 auto; }
+
+/* "+" cost amount boxes on stack chips */
+.awakened-dreaming .ad-stack-amount { display: inline-flex; align-items: center; gap: 3px; }
+.cyphersystem.awakened-dreaming .sheet-body .ad-stack-amount input[type="number"] {
+  width: 34px; height: 20px; padding: 0 2px; border: 1px solid var(--ad-gold); border-radius: 10px;
+  background: rgba(255, 251, 240, 0.12); color: var(--ad-gold-light); text-align: center;
+  font-family: var(--ad-caps); font-weight: 700; font-size: 12px; box-shadow: none;
+}
+.awakened-dreaming .ad-stack-amount small { color: var(--ad-gold-light); font-style: italic; font-size: 12px; }

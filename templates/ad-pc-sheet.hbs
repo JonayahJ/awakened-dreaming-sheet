@@ -129,6 +129,12 @@
                   {{else}}
                     <small>{{cost}}</small>
                   {{/if}}
+                  {{#each amounts}}
+                    <span class="ad-stack-amount" title="{{localize 'AWAKENED.PlusChipHint'}}">
+                      <input type="number" min="{{min}}" step="1" value="{{value}}" data-ad-stack-amount="{{../id}}" data-pool="{{pool}}" />
+                      <small>{{label}}</small>
+                    </span>
+                  {{/each}}
                   <a data-ad-stack-remove="{{id}}" title="{{localize 'AWAKENED.StackRemove'}}"><i class="fas fa-xmark"></i></a></span>
               {{/each}}
             </div>
