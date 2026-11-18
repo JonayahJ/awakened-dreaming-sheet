@@ -208,6 +208,39 @@
       </ul>
     </div>
 
+    {{#if (and (eq actor.system.basic.unmaskedForm "Mask") actor.system.settings.combat.stress.active)}}
+      <div class="ad-stress">
+        <div class="ad-stress-row">
+          <span class="ad-mini-title">{{#if actor.system.settings.combat.stress.label}}{{actor.system.settings.combat.stress.label}}{{else}}{{localize 'CYPHERSYSTEM.Stress'}}{{/if}}</span>
+          <span class="ad-stress-count" title="{{localize 'AWAKENED.StressPointsHint'}}">
+            <span class="ad-stress-lbl">{{localize 'AWAKENED.StressPoints'}}</span>
+            <a class="item-control minus-one-stress ad-round-btn {{#if (eq actor.system.combat.stress.quantity 0)}}disabled{{/if}}"><i class="fas fa-minus"></i></a>
+            <b>{{actor.system.combat.stress.quantity}}</b>
+            <a class="item-control plus-one-stress ad-round-btn"><i class="fas fa-plus"></i></a>
+          </span>
+          <span class="ad-stress-count ad-stress-levels" title="{{localize 'AWAKENED.StressLevelsHint'}}">
+            <span class="ad-stress-lbl">{{localize 'AWAKENED.StressLevels'}}</span>
+            <a class="item-control minus-one-stress-level ad-round-btn {{#if (eq actor.system.combat.stress.levels 0)}}disabled{{/if}}"><i class="fas fa-minus"></i></a>
+            <b>{{actor.system.combat.stress.levels}}</b>
+            <a class="item-control plus-one-stress-level ad-round-btn"><i class="fas fa-plus"></i></a>
+          </span>
+          <a class="item-control reset-stress ad-icon-btn {{#if sheetSettings.isObserver}}disabled{{/if}}" title="{{localize 'CYPHERSYSTEM.ResetStress'}}"><i class="fas fa-rotate"></i></a>
+        </div>
+        {{#if actor.system.settings.combat.stress.supernaturalStressActive}}
+          <div class="ad-stress-row ad-stress-super">
+            <span class="ad-mini-title">{{#if actor.system.settings.combat.stress.supernaturalStressLabel}}{{actor.system.settings.combat.stress.supernaturalStressLabel}}{{else}}{{localize 'AWAKENED.SupernaturalStress'}}{{/if}}</span>
+            <span class="ad-stress-count ad-stress-levels">
+              <span class="ad-stress-lbl">{{localize 'AWAKENED.StressLevels'}}</span>
+              <a class="item-control minus-one-supernatural-stress ad-round-btn {{#if (eq actor.system.combat.stress.supernaturalLevels 0)}}disabled{{/if}}"><i class="fas fa-minus"></i></a>
+              <b>{{actor.system.combat.stress.supernaturalLevels}}</b>
+              <a class="item-control plus-one-supernatural-stress ad-round-btn"><i class="fas fa-plus"></i></a>
+            </span>
+          </div>
+        {{/if}}
+        {{#if actor.system.combat.stress.levels}}<p class="ad-stress-note">{{localize 'AWAKENED.StressEffect'}}</p>{{/if}}
+      </div>
+    {{/if}}
+
     {{#if actor.system.settings.combat.lastingDamage.active}}
       <div class="ad-lasting">{{> systems/cyphersystem/templates/tabs/combat-tab/lasting-damage.html}}</div>
     {{/if}}

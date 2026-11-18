@@ -228,5 +228,11 @@
   "AWAKENED.InvGear": "Gear",
   "AWAKENED.InvMisc": "Miscellaneous",
   "AWAKENED.EquipmentTab": "Equipment",
-  "AWAKENED.OtherItems": "Other items"
+  "AWAKENED.OtherItems": "Other items",
+  "AWAKENED.StressPoints": "Points",
+  "AWAKENED.StressLevels": "Levels",
+  "AWAKENED.StressPointsHint": "Stress points. Every 3 points is usually one level of Stress.",
+  "AWAKENED.StressLevelsHint": "Each level of Stress makes tasks one step harder.",
+  "AWAKENED.StressEffect": "Each level of Stress makes all tasks one step harder (the Cypher System's roll window applies this).",
+  "AWAKENED.SupernaturalStress": "Supernatural stress"
 }
