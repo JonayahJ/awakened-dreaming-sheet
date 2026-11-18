@@ -44,6 +44,13 @@
           <span class="edge">E{{edge}}</span>
         </div>
       {{/each}}
+      {{#if ad.additionalPool}}
+        <div class="ad-mini-pool ad-mini-additional">
+          <span class="lbl">{{ad.additionalPool.label}}</span>
+          <span class="val"><b>{{ad.additionalPool.value}}</b>/{{ad.additionalPool.max}}</span>
+          {{#if ad.additionalPool.hasEdge}}<span class="edge">E{{ad.additionalPool.edge}}</span>{{/if}}
+        </div>
+      {{/if}}
     </div>
     <div class="ad-mini-status">
       <span class="ad-mini-chip {{ad.conditions.level}}" title="{{ad.conditions.summary}}">{{ad.conditions.summary}}</span>

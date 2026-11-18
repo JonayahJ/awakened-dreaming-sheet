@@ -639,8 +639,6 @@ Hooks.on("renderItemSheet", (app, html) => {
 const LOCKED_SETTINGS = {
   "system.settings.general.gameMode": "Cypher",
   "system.basic.unmaskedForm": "Mask",
-  "system.settings.general.additionalPool.active": false,
-  "system.settings.combat.stress.active": false,
   "system.settings.combat.additionalStepDamageTrack.active": false,
   "system.settings.combat.numberOneActionRecoveries": 1,
   "system.settings.combat.numberTenMinuteRecoveries": 2,
@@ -650,10 +648,6 @@ const LOCKED_SETTINGS = {
 };
 const HIDDEN_SETTING_FIELDS = [
   "system.settings.general.gameMode",
-  "system.settings.general.additionalPool.active",
-  "system.settings.general.additionalPool.hasEdge",
-  "system.settings.combat.stress.active",
-  "system.settings.combat.stress.supernaturalStressActive",
   "system.settings.combat.additionalStepDamageTrack.active",
   "system.settings.combat.numberOneActionRecoveries",
   "system.settings.combat.numberTenMinuteRecoveries",

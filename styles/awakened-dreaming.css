@@ -1493,3 +1493,4 @@
 .ad-gear-editor .ad-gear-bulan-tick input { margin: 0; }
 .ad-gear-editor .ad-bulan-state { display: inline-flex; }
 .ad-gear-editor .ad-gear-bulan:not(.on) .ad-bulan-state { opacity: .4; pointer-events: none; }
+.awakened-dreaming .ad-mini-additional { --c: var(--ad-additional); }
