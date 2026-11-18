@@ -230,31 +230,6 @@ function conditionUpdate(next) {
   };
 }
 
-/* Hindered: Effort costs extra points per level from the rolled pool, and Edge doesn't reduce them.
-   The Cypher System has no hook before it charges a roll, so the extra is charged right after. */
-Hooks.on("rollEngine", async (actor, data) => {
-  try {
-    if (!actor?.isOwner || data?.reroll) return;
-    if (!readConditions(actor).on.hindered) return;
-    const levels = Number(data.effortTotal) || 0;
-    const key = POOL_KEY[data.pool];
-    if (levels <= 0 || !key || data.teen) return;
-    const extra = levels * (Number(setting("hinderedExtra", 2)) || 0);
-    if (extra <= 0) return;
-    const fresh = game.actors.get(actor.id) ?? actor;
-    const net = {might: 0, speed: 0, intellect: 0, [key]: extra};
-    const result = await resolvePayment(fresh, net);
-    if (!result) return;
-    await fresh.update(result.update);
-    ChatMessage.create({
-      speaker: ChatMessage.getSpeaker({actor: fresh}),
-      content: `<p><b>${game.i18n.localize("AWAKENED.CondHindered")}:</b> ${game.i18n.format("AWAKENED.HinderedCharged", {amount: extra, pool: game.i18n.localize(`CYPHERSYSTEM.${data.pool}`), levels})}</p>${xpNote(result)}`
-    });
-  } catch (err) {
-    console.error(`${MODULE_ID} | Hindered surcharge failed`, err);
-  }
-});
-
 /** The ability's description for its chat card, always shown open. */
 async function chatDescription(item) {
   const raw = item?.system?.description ?? "";
@@ -591,16 +566,6 @@ Hooks.once("init", () => {
     type: Number,
     range: {min: 1, max: 5, step: 1},
     default: 1
-  });
-
-  game.settings.register(MODULE_ID, "hinderedExtra", {
-    name: "AWAKENED.SettingHindered",
-    hint: "AWAKENED.SettingHinderedHint",
-    scope: "world",
-    config: true,
-    type: Number,
-    range: {min: 0, max: 5, step: 1},
-    default: 2
   });
 
   game.settings.register(MODULE_ID, "currencyNames", {

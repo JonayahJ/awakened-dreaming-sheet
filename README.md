@@ -25,15 +25,14 @@ Then open the world, go to **Game Settings → Manage Modules**, tick **Awakened
 - **Use the Awakened Dreaming sheet by default.** On by default; changing it needs a reload.
 - **Campaign title on the sheet.** Sets the banner text.
 - **Pay pool shortfalls with XP** (on by default) and **XP per missing pool point** (default 1).
-- **Hindered: extra points per Effort level** (default 2). Set it to 0 to make Hindered a reminder only.
 - **Call cyphers Bulans.** On by default; changing it needs a reload. This renames cyphers to Bulans everywhere in the Cypher System (sheet, item types, chat), and the cypher limit becomes the Bulan limit.
 
 ## House rules built in
 
 - **Two pages:** the buttons under the banner switch between **I Character** and **II Abilities, Skills & Gear**. Page I has the portrait, character sentence, Advancement, shields, pools, damage track, Recovery, Effort and Awakenings. Page II has a summary bar (pools with Edge, conditions, Effort, Tier and XP), the Purse, and the tabs, with Abilities first. Each person's sheet remembers the page and tab they last used.
 - **Damage track as conditions:** Hale, then an Impaired column (Impaired, Hindered, Slowed), then a Debilitated column (Immobile, Debilitated, Unconscious). Click a condition to turn it on or off; several can be on at once. Turning on any Debilitated condition switches off the Impaired ones and holds them (shown with an amber outline). They come back when the last Debilitated condition is cleared. Clicking Hale clears everything. The effect of each active condition is listed under the track.
-  - **Impaired:** all rolls and checks are +1 Difficulty stage. **Slowed:** movement is cut in half. **Immobile:** can't walk; Speed tasks +2 Difficulty, Might tasks +1. **Debilitated:** can't carry items or physically attack; Might tasks +2 Difficulty, Speed tasks +1. These are reminders: whoever rolls applies them.
-  - **Hindered:** each level of Effort costs 2 extra points from the rolled pool, and Edge doesn't reduce them. The Cypher System charges a roll before any module can step in, so the sheet charges the extra right after the roll and posts it to chat (XP covers a shortfall, as with abilities).
+  - **Impaired:** all rolls and checks are +1 Difficulty stage. **Slowed:** movement is cut in half. **Immobile:** can't walk; Speed tasks +2 Difficulty, Might tasks +1. **Debilitated:** can't carry items or physically attack; Might tasks +2 Difficulty, Speed tasks +1. All conditions are reminders: the sheet never charges or rolls anything for them, so players can roll physical dice. Whoever rolls applies them.
+  - **Hindered:** each level of Effort costs 2 extra points from the pool used, and Edge doesn't reduce them.
   - **Unconscious:** fall prone and take no actions. The **Spend 2 XP: +1 Intellect and wake up** button does exactly that; it's greyed out with less than 2 XP.
   - The Cypher System's own Impaired and Debilitated roll penalties are switched off so they don't stack with these. Its damage track still follows along (Hale, Impaired or Debilitated) for anything that reads it.
 
