@@ -230,6 +230,410 @@ function conditionUpdate(next) {
   };
 }
 
+/* ===================== Equipment page: worn slots, armor, Bulans ===================== */
+
+/* Slots with one item each, and slots that hold any number. "beltItems" are things hanging from
+   the belt; items declare them with the "belt" slot, like the belt itself. */
+const SINGLE_SLOTS = ["head", "chest", "hands", "legs", "feet", "shield", "weapon", "belt"];
+const MULTI_SLOTS = ["back", "jewelry", "beltItems"];
+const ITEM_SLOT_CHOICES = ["head", "chest", "legs", "hands", "feet", "shield", "weapon", "belt", "back", "jewelry"];
+const SLOT_LABEL = {
+  head: "AWAKENED.SlotHead", chest: "AWAKENED.SlotChest", hands: "AWAKENED.SlotHands", legs: "AWAKENED.SlotLegs",
+  feet: "AWAKENED.SlotFeet", shield: "AWAKENED.SlotShield", weapon: "AWAKENED.SlotWeapon", belt: "AWAKENED.SlotBelt",
+  back: "AWAKENED.SlotBack", jewelry: "AWAKENED.SlotJewelry", beltItems: "AWAKENED.SlotBeltItems"
+};
+const GEAR_TYPES = ["equipment", "armor", "attack", "cypher", "artifact", "oddity", "material", "ammo"];
+const ARMOR_CLASS = {"light armor": "light", "medium armor": "medium", "heavy armor": "heavy"};
+
+/* Where each slot sits on the figure (viewBox 0 0 200 400). */
+const DOLL_SPOTS = [
+  {slot: "head", cx: 100, cy: 40, r: 11},
+  {slot: "jewelry", cx: 100, cy: 76, r: 8},
+  {slot: "back", cx: 134, cy: 94, r: 9},
+  {slot: "chest", cx: 100, cy: 128, r: 11},
+  {slot: "belt", cx: 100, cy: 194, r: 8},
+  {slot: "hands", cx: 36, cy: 204, r: 11},
+  {slot: "hands", cx: 164, cy: 204, r: 11},
+  {slot: "weapon", cx: 14, cy: 236, r: 9},
+  {slot: "shield", cx: 186, cy: 236, r: 9},
+  {slot: "legs", cx: 84, cy: 268, r: 11},
+  {slot: "legs", cx: 116, cy: 268, r: 11},
+  {slot: "feet", cx: 82, cy: 348, r: 11},
+  {slot: "feet", cx: 118, cy: 348, r: 11}
+];
+
+function itemSlots(item) {
+  const f = item?.flags?.[MODULE_ID]?.slots;
+  return Array.isArray(f) ? f.filter(s => ITEM_SLOT_CHOICES.includes(s)) : [];
+}
+/** Cyphers-type items are Bulans unless unticked; anything else can be ticked as one. */
+function isBulan(item) {
+  const f = item?.flags?.[MODULE_ID]?.bulan;
+  if (f !== undefined) return !!f;
+  return item?.type === "cypher";
+}
+function isBulanActive(item) {
+  return isBulan(item) && !!item?.flags?.[MODULE_ID]?.bulanActive;
+}
+function armorClass(item) {
+  return item?.type === "armor" ? (ARMOR_CLASS[item.system?.basic?.type] ?? null) : null;
+}
+function armorTraining(actor) {
+  const t = actor?.flags?.[MODULE_ID]?.armorTraining ?? {};
+  return {light: !!t.light, medium: !!t.medium, heavy: !!t.heavy};
+}
+function wantedSlot(slot) {
+  return slot === "beltItems" ? "belt" : slot;
+}
+
+/** The worn-slot map, with items that no longer exist dropped. */
+function readEquip(actor) {
+  const f = actor?.flags?.[MODULE_ID]?.equip ?? {};
+  const has = id => !!id && !!actor.items?.get(id);
+  const out = {};
+  for (const s of SINGLE_SLOTS) out[s] = has(f[s]) ? f[s] : null;
+  for (const s of MULTI_SLOTS) out[s] = Array.isArray(f[s]) ? [...new Set(f[s].filter(has))] : [];
+  return out;
+}
+function wornSlotsOf(eq, id) {
+  const out = SINGLE_SLOTS.filter(s => eq[s] === id);
+  for (const s of MULTI_SLOTS) if (eq[s].includes(id)) out.push(s);
+  return out;
+}
+
+/** Pure rule: put `item` in `slot`. A single slot replaces what was there. The item also fills
+    every other single slot it can be worn on that is still free. */
+function equipRule(eq, slot, id, slots) {
+  const next = foundry.utils.deepClone(eq);
+  if (MULTI_SLOTS.includes(slot)) {
+    if (!next[slot].includes(id)) next[slot].push(id);
+    return next;
+  }
+  next[slot] = id;
+  for (const s of slots) if (SINGLE_SLOTS.includes(s) && !next[s]) next[s] = id;
+  return next;
+}
+function unequipRule(eq, slot, id) {
+  const next = foundry.utils.deepClone(eq);
+  if (MULTI_SLOTS.includes(slot)) next[slot] = next[slot].filter(x => x !== id);
+  else if (!id || next[slot] === id) next[slot] = null;
+  return next;
+}
+function unequipEverywhere(eq, id) {
+  const next = foundry.utils.deepClone(eq);
+  for (const s of SINGLE_SLOTS) if (next[s] === id) next[s] = null;
+  for (const s of MULTI_SLOTS) next[s] = next[s].filter(x => x !== id);
+  return next;
+}
+
+/** Save the slots, and mark armor as worn only while it is in a slot, so the Cypher System's
+    own armor total (rating counted once per item) stays right. */
+async function saveEquip(actor, eq) {
+  await actor.update({[`${FLAG}.equip`]: eq});
+  const changes = [];
+  for (const item of actor.items) {
+    if (item.type !== "armor" || item.system.archived) continue;
+    const worn = wornSlotsOf(eq, item.id).length > 0;
+    if (!!item.system.active !== worn) changes.push({_id: item.id, "system.active": worn});
+  }
+  if (changes.length) await actor.updateEmbeddedDocuments("Item", changes);
+}
+
+function bulanCounts(actor, extraActiveId) {
+  let active = 0, carried = 0;
+  const activeNames = [];
+  for (const item of actor.items) {
+    if (item.system?.archived) continue;
+    if (!isBulan(item)) continue;
+    carried++;
+    if (isBulanActive(item) || item.id === extraActiveId) { active++; activeNames.push(item.name); }
+  }
+  const limit = Number(actor.system?.equipment?.cypherLimit) || 0;
+  return {active, carried, limit, over: limit > 0 && active > limit, activeNames};
+}
+
+/** Activate or deactivate a Bulan. Going over the limit is allowed, with a warning. */
+async function setBulanActive(item, active) {
+  const actor = item.parent;
+  if (active && actor) {
+    const counts = bulanCounts(actor, item.id);
+    await item.update({[`flags.${MODULE_ID}.bulanActive`]: true});
+    if (counts.over) warnBulanLimit(actor, item, counts);
+  } else {
+    await item.update({[`flags.${MODULE_ID}.bulanActive`]: !!active});
+  }
+}
+
+function warnBulanLimit(actor, item, counts) {
+  const esc = s => foundry.utils.escapeHTML ? foundry.utils.escapeHTML(s) : String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;"}[c]));
+  ui.notifications.warn(game.i18n.format("AWAKENED.BulanOverToast", {name: actor.name, active: counts.active, limit: counts.limit}));
+  const list = counts.activeNames.map(n => n === item.name ? `<li><b>${esc(n)}</b> ${game.i18n.localize("AWAKENED.BulanNew")}</li>` : `<li>${esc(n)}</li>`).join("");
+  ChatMessage.create({
+    speaker: ChatMessage.getSpeaker({actor}),
+    content: `<div class="ad-bulan-warn" style="border:1.5px solid #9e2b23;border-radius:5px;overflow:hidden;">
+      <div style="background:linear-gradient(180deg,#24204a,#17142f);color:#dcbd6e;padding:5px 9px;letter-spacing:.08em;"><i class="fas fa-triangle-exclamation" style="color:#e2645b"></i> ${game.i18n.localize("AWAKENED.BulanOverTitle")}</div>
+      <div style="background:#fbf3df;padding:7px 10px;">
+        <p style="margin:0 0 4px;">${game.i18n.format("AWAKENED.BulanActivated", {name: esc(actor.name), item: `<b>${esc(item.name)}</b>`})}</p>
+        <p style="margin:2px 0;text-align:center;color:#9e2b23;"><b style="font-size:20px;">${counts.active}</b> / ${counts.limit} ${game.i18n.localize("AWAKENED.ActiveBulans")}</p>
+        <ul style="margin:4px 0;padding-left:18px;">${list}</ul>
+        <p style="margin:4px 0 0;font-style:italic;">${game.i18n.localize("AWAKENED.BulanOverChatNote")}</p>
+      </div></div>`
+  });
+}
+
+/** Ask which item goes into a slot. Returns {action, id} or null. */
+async function pickForSlot(actor, slot) {
+  const want = wantedSlot(slot);
+  const eq = readEquip(actor);
+  const current = MULTI_SLOTS.includes(slot) ? null : eq[slot];
+  const gear = actor.items.filter(i => GEAR_TYPES.includes(i.type) && !i.system?.archived)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  if (!gear.length) {
+    ui.notifications.info(game.i18n.localize("AWAKENED.NoGear"));
+    return null;
+  }
+  const taken = MULTI_SLOTS.includes(slot) ? new Set(eq[slot]) : new Set();
+  const fits = gear.filter(i => itemSlots(i).includes(want) && !taken.has(i.id));
+  const others = gear.filter(i => !itemSlots(i).includes(want) && !taken.has(i.id));
+  const esc = s => foundry.utils.escapeHTML ? foundry.utils.escapeHTML(s) : s;
+  const row = i => {
+    const worn = wornSlotsOf(eq, i.id).filter(s => s !== slot).map(s => game.i18n.localize(SLOT_LABEL[s]));
+    const note = [i.type === "armor" ? `${game.i18n.localize("AWAKENED.Armor")} ${i.system.basic.rating ?? 0}` : "",
+      isBulan(i) ? game.i18n.localize(isBulanActive(i) ? "AWAKENED.BulanActive" : "AWAKENED.BulanInactive") : "",
+      worn.length ? game.i18n.format("AWAKENED.AlsoWornOn", {slots: worn.join(", ")}) : ""].filter(Boolean).join(" · ");
+    return `<label class="ad-pick-row"><input type="radio" name="adPick" value="${i.id}" ${i.id === current ? "checked" : ""}/>
+      <img src="${i.img}" width="26" height="26"/><span class="ad-pick-name">${esc(i.name)}</span><em>${note}</em></label>`;
+  };
+  let content = `<div class="ad-picker">`;
+  content += `<p class="ad-pick-cap">${game.i18n.format("AWAKENED.PickFits", {slot: game.i18n.localize(SLOT_LABEL[slot])})}</p>`;
+  content += fits.length ? fits.map(row).join("") : `<p class="ad-pick-none">${game.i18n.localize("AWAKENED.PickNoneFit")}</p>`;
+  if (others.length) {
+    content += `<details class="ad-pick-others"><summary>${game.i18n.localize("AWAKENED.PickOthers")}</summary>${others.map(row).join("")}</details>`;
+  }
+  content += `</div>`;
+  const buttons = [{action: "equip", label: game.i18n.localize("AWAKENED.Equip"), icon: "fas fa-check", default: true,
+    callback: (event, button) => ({action: "equip", id: button.form?.elements?.adPick?.value || null})}];
+  if (current) buttons.push({action: "empty", label: game.i18n.localize("AWAKENED.EmptySlot"), icon: "fas fa-eraser", callback: () => ({action: "empty"})});
+  buttons.push({action: "cancel", label: game.i18n.localize("Cancel"), icon: "fas fa-xmark", callback: () => null});
+  const DialogV2 = foundry.applications.api.DialogV2;
+  const result = await DialogV2.wait({
+    window: {title: game.i18n.format("AWAKENED.PickTitle", {slot: game.i18n.localize(SLOT_LABEL[slot])})},
+    classes: ["awakened-dreaming-picker"],
+    content, buttons, rejectClose: false
+  });
+  return result && typeof result === "object" ? result : null;
+}
+
+async function equipFromPicker(actor, slot) {
+  const res = await pickForSlot(actor, slot);
+  if (!res) return;
+  const eq = readEquip(actor);
+  if (res.action === "empty") return saveEquip(actor, unequipRule(eq, slot));
+  if (res.action !== "equip" || !res.id) return;
+  const item = actor.items.get(res.id);
+  if (!item) return;
+  const want = wantedSlot(slot);
+  let slots = itemSlots(item);
+  if (!slots.includes(want)) {
+    slots = [...slots, want];
+    await item.update({[`flags.${MODULE_ID}.slots`]: slots});
+  }
+  await saveEquip(actor, equipRule(eq, slot, item.id, slots));
+}
+
+/* House rule: armor's Speed cost only counts for classes the character isn't trained in. */
+function adjustArmorCost(actor) {
+  if (actor?.type !== "pc") return;
+  const training = armorTraining(actor);
+  if (!training.light && !training.medium && !training.heavy) return;
+  let cost = 0;
+  for (const piece of actor.items) {
+    if (piece.type !== "armor" || piece.system.active !== true || piece.system.archived !== false) continue;
+    if (piece.system.settings?.general?.unmaskedForm === "Teen") continue;
+    const cls = armorClass(piece);
+    if (cls && training[cls]) continue;
+    cost += Number(parseInt(piece.system.basic.cost ?? 0, 10)) || 0;
+  }
+  actor.system.combat.armor.costTotal = cost;
+}
+
+/** Sheet data for page III. */
+function buildGearData(actor) {
+  const loc = key => game.i18n.localize(key);
+  const eq = readEquip(actor);
+  const training = armorTraining(actor);
+  const view = item => {
+    if (!item) return null;
+    const cls = armorClass(item);
+    const rating = item.type === "armor" ? Number(item.system.basic.rating) || 0 : null;
+    const cost = item.type === "armor" ? Number(parseInt(item.system.basic.cost ?? 0, 10)) || 0 : 0;
+    const untrainedCost = cost > 0 && !(cls && training[cls]);
+    const meta = [];
+    if (item.type === "armor") {
+      meta.push(rating ? "" : loc("AWAKENED.NoArmor"));
+      if (cls) meta.push(loc(`AWAKENED.Class${cls[0].toUpperCase()}${cls.slice(1)}`));
+    }
+    if (item.type === "attack") {
+      const dmg = item.system.basic.damage;
+      if (dmg) meta.push(game.i18n.format("AWAKENED.Damage", {dmg}));
+    }
+    if (item.type === "equipment" && Number(item.system.basic.quantity) > 1) meta.push(`× ${item.system.basic.quantity}`);
+    const bulan = isBulan(item);
+    if (bulan) meta.push(loc("AWAKENED.Bulan"));
+    return {
+      id: item.id, name: item.name, img: item.img, rating, isArmor: item.type === "armor",
+      ratingShown: item.type === "armor" && rating > 0,
+      speedCost: untrainedCost ? cost : 0,
+      meta: meta.filter(Boolean).join(" · "),
+      bulan, bulanActive: isBulanActive(item)
+    };
+  };
+  const slotCss = v => !v ? "empty" : v.bulan ? (v.bulanActive ? "bulan" : "bulan-off") : v.ratingShown ? "armor" : "gear";
+  const single = s => {
+    const v = view(actor.items.get(eq[s]));
+    const shared = v ? SINGLE_SLOTS.filter(o => o !== s && eq[o] === v.id).length > 0 : false;
+    return {key: s, label: loc(SLOT_LABEL[s]), item: v, css: slotCss(v), shared};
+  };
+  const multi = s => ({key: s, label: loc(SLOT_LABEL[s]), items: eq[s].map(id => view(actor.items.get(id)))});
+
+  const slots = Object.fromEntries(SINGLE_SLOTS.map(s => [s, single(s)]));
+  const lists = Object.fromEntries(MULTI_SLOTS.map(s => [s, multi(s)]));
+
+  const spots = DOLL_SPOTS.map(p => {
+    let css = "empty";
+    if (MULTI_SLOTS.includes(p.slot)) {
+      const items = lists[p.slot].items;
+      if (items.some(i => i.bulanActive)) css = "bulan";
+      else if (items.some(i => i.bulan)) css = "bulan-off";
+      else if (items.length) css = "gear";
+    } else if (p.slot === "belt") {
+      const own = slots.belt.css;
+      const hanging = lists.beltItems.items;
+      css = own !== "empty" ? own : hanging.length ? "gear" : "empty";
+      if (hanging.some(i => i.bulanActive)) css = "bulan";
+    } else css = slots[p.slot].css;
+    return {...p, css, label: loc(SLOT_LABEL[p.slot])};
+  });
+
+  // Armor: each worn armor item counts once, however many slots it fills.
+  const wornArmor = [];
+  let speedCost = 0;
+  const seen = new Set();
+  for (const id of [...SINGLE_SLOTS.map(s => eq[s]), ...MULTI_SLOTS.flatMap(s => eq[s])]) {
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    const item = actor.items.get(id);
+    if (item?.type !== "armor") continue;
+    const v = view(item);
+    speedCost += v.speedCost;
+    wornArmor.push({name: v.name, rating: v.rating, speedCost: v.speedCost,
+      slots: wornSlotsOf(eq, id).map(s => loc(SLOT_LABEL[s])).join(", "),
+      multi: wornSlotsOf(eq, id).length > 1});
+  }
+  const counts = bulanCounts(actor);
+  counts.overText = counts.over ? game.i18n.format("AWAKENED.BulanOverText", {name: actor.name, active: counts.active, limit: counts.limit}) : "";
+  return {
+    slots, lists, spots,
+    armor: {total: actor.system.combat.armor.ratingTotal ?? 0, lines: wornArmor, speedCost, training,
+      trainingPath: `${FLAG}.armorTraining`},
+    bulans: counts
+  };
+}
+
+/* The Cypher System's roll window: Effort costs no pool points (house rule). Effort still eases
+   the task and adds damage, and the per-roll limit (Tier) still applies. */
+function patchRollDialog(app, html) {
+  const proto = Object.getPrototypeOf(app);
+  if (!proto._adEffortFree && typeof proto.getData === "function") {
+    proto._adEffortFree = true;
+    setTimeout(() => app.rendered && app.render(false), 0);
+    const origGetData = proto.getData;
+    proto.getData = function (...args) {
+      const d = this.object;
+      if (!d) return origGetData.apply(this, args);
+      const userFree = Number(d.freeEffort) || 0;
+      const used = (Number(d.effortToEase) || 0) + (Number(d.effortOtherUses) || 0) + (Number(d.effortDamage) || 0);
+      d.freeEffort = Math.max(used, userFree);
+      let out;
+      try { out = origGetData.apply(this, args); } finally { d.freeEffort = userFree; }
+      try {
+        const actor = fromUuidSync(d.actorUuid);
+        const effort = Number(actor?.system?.basic?.effort) || 0;
+        out.freeEffort = userFree;
+        out.effortValue = Math.min(effort + userFree, 6);
+        const tooMuch = used > 6 || (used - userFree) > effort;
+        out.summaryTooMuchEffort = tooMuch ? game.i18n.localize("CYPHERSYSTEM.SpendTooMuchEffort") : "";
+        out.exceedEffort = tooMuch ? "exceeded" : "";
+        let rb = false;
+        try { rb = game.settings.get("cyphersystem", "ruleBreakingRolls"); } catch (e) { /* ignore */ }
+        out.disabledButton = (out.summaryTooMuchEffort || out.summaryNotEnoughPointsString) && !rb ? "disabled" : "";
+      } catch (err) {
+        console.error(`${MODULE_ID} | roll window Effort patch`, err);
+      }
+      return out;
+    };
+  }
+  // Right before Roll or Pay, make every level of Effort free so no pool points are taken for it.
+  const root = html?.[0] ?? html;
+  if (root?.addEventListener && !root._adEffortHook) {
+    root._adEffortHook = true;
+    root.addEventListener("click", ev => {
+      if (!ev.target?.closest?.(".roll-engine-roll, .roll-engine-pay")) return;
+      const d = app.object;
+      if (!d) return;
+      const used = (Number(d.effortToEase) || 0) + (Number(d.effortOtherUses) || 0) + (Number(d.effortDamage) || 0);
+      d.freeEffort = Math.max(used, Number(d.freeEffort) || 0);
+    }, true);
+  }
+}
+Hooks.on("renderRollEngineDialogSheet", (app, html) => {
+  try { patchRollDialog(app, html); } catch (err) { console.error(`${MODULE_ID} | roll window`, err); }
+});
+
+/* Item windows: where it can be worn, and whether it's a Bulan (Active or Inactive). */
+Hooks.on("renderItemSheet", (app, html) => {
+  const item = app.document ?? app.item ?? app.object;
+  if (!item || !GEAR_TYPES.includes(item.type)) return;
+  const $html = html instanceof jQuery ? html : $(html);
+  if ($html.find(".ad-gear-editor").length) return;
+  const anchor = $html.find("header.sheet-header .header-fields").first();
+  const target = anchor.length ? anchor : $html.find(".sheet-header").first();
+  if (!target.length) return;
+  const disabled = app.isEditable === false ? "disabled" : "";
+  const slots = itemSlots(item);
+  const bul = isBulan(item);
+  const act = isBulanActive(item);
+  const chips = ITEM_SLOT_CHOICES.map(s => `<label class="ad-gchip ${slots.includes(s) ? "on" : ""}">
+      <input type="checkbox" data-ad-item-slot="${s}" ${slots.includes(s) ? "checked" : ""} ${disabled}/>${game.i18n.localize(SLOT_LABEL[s])}</label>`).join("");
+  const box = $(`
+    <div class="ad-gear-editor">
+      <div class="ad-gear-cap">${game.i18n.localize("AWAKENED.WornOn")}</div>
+      <div class="ad-gchips">${chips}</div>
+      <p class="ad-gear-hint">${game.i18n.localize("AWAKENED.WornOnHint")}</p>
+      <div class="ad-gear-bulan ${bul ? "on" : ""}">
+        <label class="ad-gear-bulan-tick"><input type="checkbox" data-ad-item-bulan ${bul ? "checked" : ""} ${disabled}/> <i class="fas fa-gem"></i> ${game.i18n.localize("AWAKENED.IsBulan")}</label>
+        <span class="ad-gchips ad-bulan-state">
+          <label class="ad-gchip bul ${act ? "on" : ""}"><input type="radio" name="adBulanState-${item.id}" value="active" data-ad-item-bulan-state ${act ? "checked" : ""} ${bul ? "" : "disabled"} ${disabled}/>${game.i18n.localize("AWAKENED.BulanActive")}</label>
+          <label class="ad-gchip bul ${bul && !act ? "on" : ""}"><input type="radio" name="adBulanState-${item.id}" value="inactive" data-ad-item-bulan-state ${bul && !act ? "checked" : ""} ${bul ? "" : "disabled"} ${disabled}/>${game.i18n.localize("AWAKENED.BulanInactive")}</label>
+        </span>
+        <p class="ad-gear-hint">${game.i18n.localize("AWAKENED.BulanHint")}</p>
+      </div>
+    </div>`);
+  target.append(box);
+  box.find("input").on("click change", ev => ev.stopPropagation());
+  box.find("[data-ad-item-slot]").on("change", ev => {
+    const chosen = box.find("[data-ad-item-slot]:checked").map((_, el) => el.dataset.adItemSlot).get();
+    item.update({[`flags.${MODULE_ID}.slots`]: chosen});
+  });
+  box.find("[data-ad-item-bulan]").on("change", ev => {
+    const on = ev.currentTarget.checked;
+    item.update({[`flags.${MODULE_ID}.bulan`]: on, [`flags.${MODULE_ID}.bulanActive`]: false});
+  });
+  box.find("[data-ad-item-bulan-state]").on("change", ev => {
+    setBulanActive(item, ev.currentTarget.value === "active");
+  });
+});
+
 /** The ability's description for its chat card, always shown open. */
 async function chatDescription(item) {
   const raw = item?.system?.description ?? "";
@@ -666,12 +1070,15 @@ Hooks.once("setup", () => {
       data.ad.passiveCount = passives.length;
       data.ad.passivesOpen = !!game.user.getFlag(MODULE_ID, "passivesOpen")?.[this.actor.id];
       const view = game.user.getFlag(MODULE_ID, "view")?.[this.actor.id] ?? {};
-      if (!this._adPage) this._adPage = view.page === 2 ? 2 : 1;
+      if (!this._adPage) this._adPage = [1, 2, 3].includes(view.page) ? view.page : 1;
+      if (!this._adGearTab) this._adGearTab = view.gearTab === "inventory" ? "inventory" : "worn";
+      data.ad.gearTab = this._adGearTab;
+      data.ad.gear = buildGearData(this.actor);
       data.ad.page = this._adPage;
       // Open on the tab this person last used on this sheet (once per opening).
       if (!this._adTabRestored && this._tabs?.[0]) {
         this._adTabRestored = true;
-        const tabs = ["abilities", "skills", "combat", "items", "notes", "description", "tags", "settings"];
+        const tabs = ["abilities", "skills", "combat", "notes", "description", "tags", "settings"];
         if (tabs.includes(view.tab)) this._tabs[0].active = view.tab;
       }
       return data;
@@ -838,13 +1245,57 @@ Hooks.once("setup", () => {
       // Two pages: switch without re-rendering, and remember the choice.
       html.find("[data-ad-page]").on("click", event => {
         event.preventDefault();
-        const page = Number(event.currentTarget.dataset.adPage) === 2 ? 2 : 1;
+        const page = Math.min(3, Math.max(1, Number(event.currentTarget.dataset.adPage) || 1));
         this._adPage = page;
         const el = $(this.form ?? html[0]);
-        el.removeClass("ad-on-page-1 ad-on-page-2").addClass(`ad-on-page-${page}`);
+        el.removeClass("ad-on-page-1 ad-on-page-2 ad-on-page-3").addClass(`ad-on-page-${page}`);
         html.find("[data-ad-page]").removeClass("active");
         html.find(`[data-ad-page="${page}"]`).addClass("active");
         this._adSaveView({page});
+      });
+
+      // Page III: Worn / Inventory
+      html.find("[data-ad-gear-tab]").on("click", event => {
+        event.preventDefault();
+        const tab = event.currentTarget.dataset.adGearTab === "inventory" ? "inventory" : "worn";
+        this._adGearTab = tab;
+        const el = $(this.form ?? html[0]);
+        el.find(".ad-page3").removeClass("ad-gear-worn ad-gear-inventory").addClass(`ad-gear-${tab}`);
+        el.find("[data-ad-gear-tab]").removeClass("active");
+        el.find(`[data-ad-gear-tab="${tab}"]`).addClass("active");
+        this._adSaveView({gearTab: tab});
+      });
+
+      // Worn slots: click a slot (or its dot on the figure) to choose what goes there.
+      html.find("[data-ad-slot]").on("click", event => {
+        event.preventDefault();
+        if (!this.isEditable) return;
+        equipFromPicker(actor, event.currentTarget.dataset.adSlot);
+      });
+      html.find("[data-ad-unslot]").on("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.isEditable) return;
+        const {adUnslot, itemId} = event.currentTarget.dataset;
+        saveEquip(actor, unequipRule(readEquip(actor), adUnslot, itemId));
+      });
+      html.find("[data-ad-unslot-all]").on("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.isEditable) return;
+        saveEquip(actor, unequipEverywhere(readEquip(actor), event.currentTarget.dataset.adUnslotAll));
+      });
+      html.find("[data-ad-open-item]").on("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        actor.items.get(event.currentTarget.dataset.adOpenItem)?.sheet?.render(true);
+      });
+      html.find("[data-ad-bulan-toggle]").on("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.isEditable) return;
+        const item = actor.items.get(event.currentTarget.dataset.adBulanToggle);
+        if (item) setBulanActive(item, !isBulanActive(item));
       });
 
       // Conditions (damage track).
@@ -969,11 +1420,24 @@ Hooks.once("setup", () => {
   });
 
   // Foundry fetches templates over its own socket, so browsers never serve stale copies of them.
+  // Armor training: untrained classes keep their Speed cost, trained ones lose it.
+  const ActorDoc = CONFIG.Actor.documentClass;
+  if (ActorDoc && !ActorDoc.prototype._adArmorPatched) {
+    ActorDoc.prototype._adArmorPatched = true;
+    const origDerived = ActorDoc.prototype.prepareDerivedData;
+    ActorDoc.prototype.prepareDerivedData = function (...args) {
+      const out = origDerived.apply(this, args);
+      try { adjustArmorCost(this); } catch (err) { console.error(`${MODULE_ID} | armor cost`, err); }
+      return out;
+    };
+  }
+
   foundry.applications.handlebars.loadTemplates([
     `${TEMPLATE_ROOT}/ad-pc-sheet.hbs`,
     `${TEMPLATE_ROOT}/ad-header.hbs`,
     `${TEMPLATE_ROOT}/ad-awakenings.hbs`,
-    `${TEMPLATE_ROOT}/ad-morphs.hbs`
+    `${TEMPLATE_ROOT}/ad-morphs.hbs`,
+    `${TEMPLATE_ROOT}/ad-equipment.hbs`
   ]);
 
   game.modules.get(MODULE_ID).api = {AwakenedDreamingPCSheet};

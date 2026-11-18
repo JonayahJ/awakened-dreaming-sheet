@@ -25,7 +25,8 @@
 
   <nav class="ad-pages">
     <a class="ad-page-tab {{#if (eq ad.page 1)}}active{{/if}}" data-ad-page="1"><span class="ad-roman">I</span> {{localize 'AWAKENED.PageCharacter'}}</a>
-    <a class="ad-page-tab {{#if (eq ad.page 2)}}active{{/if}}" data-ad-page="2"><span class="ad-roman">II</span> {{localize 'AWAKENED.PageGear'}}</a>
+    <a class="ad-page-tab {{#if (eq ad.page 2)}}active{{/if}}" data-ad-page="2"><span class="ad-roman">II</span> {{localize 'AWAKENED.PageAbilities'}}</a>
+    <a class="ad-page-tab {{#if (eq ad.page 3)}}active{{/if}}" data-ad-page="3"><span class="ad-roman">III</span> {{localize 'AWAKENED.PageEquipment'}}</a>
   </nav>
 
   {{!-- Compact summary bar (page II) --}}
@@ -67,6 +68,8 @@
       {{/if}}
   </div>
 
+  {{> modules/awakened-dreaming-sheet/templates/ad-equipment.hbs}}
+
   {{!-- Sheet Header --}}
   <header class="sheet-header ad-header">
     {{#if ad.useCustomHeader}}
@@ -86,7 +89,6 @@
       <a class="item" data-tab="abilities"><i class="fa-solid fa-sparkles"></i> {{localize 'CYPHERSYSTEM.Abilities'}}</a>
       <a class="item" data-tab="skills"><i class="fa-solid fa-scroll"></i> {{localize 'CYPHERSYSTEM.Skills'}}</a>
       <a class="item" data-tab="combat"><i class="fa-solid fa-swords"></i> {{localize 'CYPHERSYSTEM.Combat'}}</a>
-      <a class="item" data-tab="items"><i class="fa-solid fa-sack"></i> {{localize 'CYPHERSYSTEM.Equipment'}}</a>
       <a class="item ad-tab-icon" data-tab="notes" title="{{localize 'CYPHERSYSTEM.Notes'}}"><i class="fa-regular fa-feather-pointed"></i></a>
     {{/unless}}
     {{#if sheetSettings.isLimited}}
@@ -121,22 +123,6 @@
       {{> systems/cyphersystem/templates/tabs/combat-tab/armor.html}}
     </div>
 
-    <div class="tab items" data-group="primary" data-tab="items">
-
-      {{> systems/cyphersystem/templates/tabs/equipment-tab/equipment.html}}
-      {{#if actor.system.settings.equipment.cyphers.active}}
-        {{> systems/cyphersystem/templates/tabs/equipment-tab/cyphers.html}}
-      {{/if}}
-      {{#if actor.system.settings.equipment.artifacts.active}}
-        {{> systems/cyphersystem/templates/tabs/equipment-tab/artifacts.html}}
-      {{/if}}
-      {{#if actor.system.settings.equipment.oddities.active}}
-        {{> systems/cyphersystem/templates/tabs/equipment-tab/oddities.html}}
-      {{/if}}
-      {{#if actor.system.settings.equipment.materials.active}}
-        {{> systems/cyphersystem/templates/tabs/equipment-tab/materials.html}}
-      {{/if}}
-    </div>
 
     <div class="tab abilities" data-group="primary" data-tab="abilities">
       {{#unless sheetSettings.isObserver}}

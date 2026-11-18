@@ -1,0 +1,152 @@
+{{!-- ===================== PAGE III: EQUIPMENT ===================== --}}
+{{#*inline "adSlot"}}
+  <div class="ad-slot {{slot.css}}" data-ad-slot="{{slot.key}}" title="{{localize 'AWAKENED.SlotClick'}}">
+    <span class="ad-slot-name">{{slot.label}}</span>
+    {{#if slot.item}}
+      <span class="ad-slot-item">
+        <a class="ad-slot-link" data-ad-open-item="{{slot.item.id}}">{{slot.item.name}}</a>
+        {{#if slot.item.bulan}}<a class="ad-bul-tog {{#if slot.item.bulanActive}}on{{/if}}" data-ad-bulan-toggle="{{slot.item.id}}" title="{{localize 'AWAKENED.BulanToggleHint'}}"><i class="fa-solid fa-gem"></i> {{#if slot.item.bulanActive}}{{localize 'AWAKENED.BulanActive'}}{{else}}{{localize 'AWAKENED.BulanInactive'}}{{/if}}</a>{{/if}}
+      </span>
+      <span class="ad-slot-meta">{{#if slot.item.ratingShown}}<b>{{slot.item.rating}}</b>{{/if}} {{slot.item.meta}}{{#if slot.item.speedCost}} · <span class="ad-warn">+{{slot.item.speedCost}} {{localize 'AWAKENED.SpeedCostShort'}}</span>{{/if}}</span>
+      <span class="ad-slot-x">
+        <a data-ad-unslot="{{slot.key}}" data-item-id="{{slot.item.id}}" title="{{localize 'AWAKENED.EmptySlot'}}"><i class="fas fa-xmark"></i></a>
+        {{#if slot.shared}}<a data-ad-unslot-all="{{slot.item.id}}" title="{{localize 'AWAKENED.TakeOffAll'}}"><i class="fas fa-angles-down"></i></a>{{/if}}
+      </span>
+    {{else}}
+      <span class="ad-slot-item">{{localize 'AWAKENED.Empty'}} <em>· {{localize 'AWAKENED.ClickToEquip'}}</em></span>
+    {{/if}}
+  </div>
+{{/inline}}
+{{#*inline "adChips"}}
+  <span class="ad-jewel-list">
+    {{#each list.items}}
+      <span class="ad-jewel {{#if bulan}}bulan{{/if}} {{#if bulanActive}}on{{/if}}">
+        <a data-ad-open-item="{{id}}">{{name}}</a>
+        {{#if bulan}}<a class="ad-chip-state" data-ad-bulan-toggle="{{id}}" title="{{localize 'AWAKENED.BulanToggleHint'}}"><i class="{{#if bulanActive}}fa-solid{{else}}fa-regular{{/if}} fa-gem"></i> {{#if bulanActive}}{{localize 'AWAKENED.BulanActive'}}{{else}}{{localize 'AWAKENED.BulanInactive'}}{{/if}}</a>{{/if}}
+        <a class="ad-chip-x" data-ad-unslot="{{../list.key}}" data-item-id="{{id}}" title="{{localize 'AWAKENED.Remove'}}"><i class="fas fa-xmark"></i></a>
+      </span>
+    {{/each}}
+    <a class="ad-jewel add" data-ad-slot="{{list.key}}" title="{{localize 'AWAKENED.AddTo'}} {{list.label}}"><i class="fas fa-plus"></i></a>
+  </span>
+{{/inline}}
+
+<section class="ad-page3 ad-gear-{{ad.gearTab}}">
+  <nav class="ad-p3-tabs">
+    <a class="{{#if (eq ad.gearTab 'worn')}}active{{/if}}" data-ad-gear-tab="worn"><i class="fa-solid fa-person"></i> {{localize 'AWAKENED.Worn'}}</a>
+    <a class="{{#if (eq ad.gearTab 'inventory')}}active{{/if}}" data-ad-gear-tab="inventory"><i class="fa-solid fa-box-open"></i> {{localize 'AWAKENED.Inventory'}}</a>
+    <span class="ad-p3-bulans {{#if ad.gear.bulans.over}}over{{/if}}" title="{{localize 'AWAKENED.BulanCountHint'}}">
+      <i class="fa-solid {{#if ad.gear.bulans.over}}fa-triangle-exclamation{{else}}fa-gem{{/if}}"></i>
+      {{localize 'AWAKENED.ActiveBulans'}} <b>{{ad.gear.bulans.active}}</b>{{#if ad.gear.bulans.limit}} / {{ad.gear.bulans.limit}}{{/if}}
+      <em>· {{#if ad.gear.bulans.over}}{{localize 'AWAKENED.OverLimit'}}{{else}}{{ad.gear.bulans.carried}} {{localize 'AWAKENED.BulansCarried'}}{{/if}}</em>
+    </span>
+  </nav>
+
+  {{#if ad.gear.bulans.over}}
+    <div class="ad-bulan-strip"><i class="fa-solid fa-triangle-exclamation"></i>
+      <div><b>{{localize 'AWAKENED.BulanOverTitle'}}.</b> {{ad.gear.bulans.overText}}</div>
+    </div>
+  {{/if}}
+
+  <div class="ad-gear-pane ad-pane-worn">
+    <div class="ad-doll-wrap">
+      <div class="ad-slot-col">
+        {{> adSlot slot=ad.gear.slots.head}}
+        {{> adSlot slot=ad.gear.slots.chest}}
+        {{> adSlot slot=ad.gear.slots.hands}}
+        {{> adSlot slot=ad.gear.slots.weapon}}
+        <div class="ad-slot ad-slot-multi {{ad.gear.slots.belt.css}}">
+          <span class="ad-slot-name">{{ad.gear.slots.belt.label}}</span>
+          {{#if ad.gear.slots.belt.item}}
+            <span class="ad-slot-item"><a class="ad-slot-link" data-ad-slot="belt">{{ad.gear.slots.belt.item.name}}</a>
+              {{#if ad.gear.slots.belt.item.bulan}}<a class="ad-bul-tog {{#if ad.gear.slots.belt.item.bulanActive}}on{{/if}}" data-ad-bulan-toggle="{{ad.gear.slots.belt.item.id}}"><i class="fa-solid fa-gem"></i> {{#if ad.gear.slots.belt.item.bulanActive}}{{localize 'AWAKENED.BulanActive'}}{{else}}{{localize 'AWAKENED.BulanInactive'}}{{/if}}</a>{{/if}}
+            </span>
+            <span class="ad-slot-x"><a data-ad-unslot="belt" data-item-id="{{ad.gear.slots.belt.item.id}}" title="{{localize 'AWAKENED.EmptySlot'}}"><i class="fas fa-xmark"></i></a></span>
+          {{else}}
+            <span class="ad-slot-item"><a class="ad-slot-link" data-ad-slot="belt">{{localize 'AWAKENED.Empty'}} <em>· {{localize 'AWAKENED.ClickToEquip'}}</em></a></span>
+          {{/if}}
+          <span class="ad-slot-meta">{{localize 'AWAKENED.HangingFrom'}}</span>
+          {{> adChips list=ad.gear.lists.beltItems}}
+        </div>
+      </div>
+
+      <div class="ad-doll">
+        <svg viewBox="0 0 200 400" class="ad-doll-svg">
+          <defs><linearGradient id="adDollFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2550"/><stop offset="1" stop-color="#17142f"/></linearGradient></defs>
+          <g fill="url(#adDollFill)" stroke="#b3893a" stroke-width="1.6" stroke-linejoin="round">
+            <ellipse cx="100" cy="42" rx="24" ry="28"/>
+            <path d="M88 68 L112 68 L114 82 L86 82 Z"/>
+            <path d="M60 86 Q100 74 140 86 L146 170 Q100 182 54 170 Z"/>
+            <path d="M60 88 L42 100 L30 190 L44 194 L58 118 Z"/>
+            <path d="M140 88 L158 100 L170 190 L156 194 L142 118 Z"/>
+            <path d="M56 172 Q100 184 144 172 L140 210 L60 210 Z"/>
+            <path d="M62 210 L98 210 L94 330 L72 330 Z"/>
+            <path d="M102 210 L138 210 L128 330 L106 330 Z"/>
+            <path d="M70 332 L95 332 L96 360 L60 362 Z"/>
+            <path d="M105 332 L130 332 L140 362 L104 360 Z"/>
+            <circle cx="36" cy="204" r="11"/><circle cx="164" cy="204" r="11"/>
+          </g>
+          <g class="ad-doll-spots">
+            {{#each ad.gear.spots}}
+              <circle class="spot {{css}}" cx="{{cx}}" cy="{{cy}}" r="{{r}}" data-ad-slot="{{slot}}"><title>{{label}}</title></circle>
+            {{/each}}
+          </g>
+        </svg>
+        <div class="ad-doll-legend">
+          <span><i class="dot armor"></i>{{localize 'AWAKENED.Armor'}}</span>
+          <span><i class="dot gear"></i>{{localize 'AWAKENED.Gear'}}</span>
+          <span><i class="dot bulan"></i>{{localize 'AWAKENED.LegendActiveBulan'}}</span>
+          <span><i class="dot bulan-off"></i>{{localize 'AWAKENED.LegendInactiveBulan'}}</span>
+          <span><i class="dot empty"></i>{{localize 'AWAKENED.Empty'}}</span>
+        </div>
+      </div>
+
+      <div class="ad-slot-col">
+        {{> adSlot slot=ad.gear.slots.shield}}
+        {{> adSlot slot=ad.gear.slots.legs}}
+        {{> adSlot slot=ad.gear.slots.feet}}
+        <div class="ad-slot ad-slot-multi">
+          <span class="ad-slot-name">{{ad.gear.lists.back.label}} <em>· {{localize 'AWAKENED.AnyNumber'}}</em></span>
+          {{> adChips list=ad.gear.lists.back}}
+        </div>
+        <div class="ad-slot ad-slot-multi">
+          <span class="ad-slot-name">{{ad.gear.lists.jewelry.label}} <em>· {{localize 'AWAKENED.AnyNumber'}}</em></span>
+          {{> adChips list=ad.gear.lists.jewelry}}
+        </div>
+      </div>
+    </div>
+
+    <div class="ad-armor-sum">
+      <div class="ad-armor-total"><span class="n">{{ad.gear.armor.total}}</span><span class="l">{{localize 'AWAKENED.Armor'}}</span></div>
+      <div class="ad-armor-lines">
+        {{#each ad.gear.armor.lines}}
+          <div><b>{{name}}</b> {{rating}} <em>({{slots}}{{#if multi}} · {{localize 'AWAKENED.CountsOnce'}}{{/if}})</em></div>
+        {{else}}
+          <div class="muted"><em>{{localize 'AWAKENED.NoArmorWorn'}}</em></div>
+        {{/each}}
+      </div>
+      <div class="ad-armor-train">
+        <span class="ad-mini-title">{{localize 'AWAKENED.TrainedIn'}}</span>
+        <label><input type="checkbox" name="{{ad.gear.armor.trainingPath}}.light" {{checked ad.gear.armor.training.light}} /> {{localize 'AWAKENED.ClassLight'}}</label>
+        <label><input type="checkbox" name="{{ad.gear.armor.trainingPath}}.medium" {{checked ad.gear.armor.training.medium}} /> {{localize 'AWAKENED.ClassMedium'}}</label>
+        <label><input type="checkbox" name="{{ad.gear.armor.trainingPath}}.heavy" {{checked ad.gear.armor.training.heavy}} /> {{localize 'AWAKENED.ClassHeavy'}}</label>
+        <div class="ad-armor-cost">{{localize 'AWAKENED.SpeedEffortCost'}}: <b>+{{ad.gear.armor.speedCost}}</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ad-gear-pane ad-pane-inventory">
+      {{> systems/cyphersystem/templates/tabs/equipment-tab/equipment.html}}
+      {{#if actor.system.settings.equipment.cyphers.active}}
+        {{> systems/cyphersystem/templates/tabs/equipment-tab/cyphers.html}}
+      {{/if}}
+      {{#if actor.system.settings.equipment.artifacts.active}}
+        {{> systems/cyphersystem/templates/tabs/equipment-tab/artifacts.html}}
+      {{/if}}
+      {{#if actor.system.settings.equipment.oddities.active}}
+        {{> systems/cyphersystem/templates/tabs/equipment-tab/oddities.html}}
+      {{/if}}
+      {{#if actor.system.settings.equipment.materials.active}}
+        {{> systems/cyphersystem/templates/tabs/equipment-tab/materials.html}}
+      {{/if}}
+  </div>
+</section>
