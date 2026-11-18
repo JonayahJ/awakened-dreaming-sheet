@@ -1494,3 +1494,7 @@
 .ad-gear-editor .ad-bulan-state { display: inline-flex; }
 .ad-gear-editor .ad-gear-bulan:not(.on) .ad-bulan-state { opacity: .4; pointer-events: none; }
 .awakened-dreaming .ad-mini-additional { --c: var(--ad-additional); }
+.awakened-dreaming-picker .ad-pick-new { padding: 6px 8px; margin-bottom: 8px; border: 1px dashed rgba(179,137,58,.7); border-radius: 5px; }
+.awakened-dreaming-picker .ad-pick-new-row { display: flex; gap: 6px; }
+.awakened-dreaming-picker .ad-pick-new-row input { flex: 1 1 auto; }
+.awakened-dreaming-picker .ad-pick-new-row select { flex: 0 0 auto; }

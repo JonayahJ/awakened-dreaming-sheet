@@ -236,7 +236,7 @@ function conditionUpdate(next) {
    the belt; items declare them with the "belt" slot, like the belt itself. */
 const SINGLE_SLOTS = ["head", "chest", "hands", "legs", "feet", "shield", "weapon", "belt"];
 const MULTI_SLOTS = ["back", "jewelry", "beltItems"];
-const ITEM_SLOT_CHOICES = ["head", "chest", "legs", "hands", "feet", "shield", "weapon", "belt", "back", "jewelry"];
+const ITEM_SLOT_CHOICES = ["head", "chest", "legs", "hands", "feet", "shield", "weapon", "belt", "beltItems", "back", "jewelry"];
 const SLOT_LABEL = {
   head: "AWAKENED.SlotHead", chest: "AWAKENED.SlotChest", hands: "AWAKENED.SlotHands", legs: "AWAKENED.SlotLegs",
   feet: "AWAKENED.SlotFeet", shield: "AWAKENED.SlotShield", weapon: "AWAKENED.SlotWeapon", belt: "AWAKENED.SlotBelt",
@@ -381,21 +381,31 @@ function warnBulanLimit(actor, item, counts) {
   });
 }
 
-/** Ask which item goes into a slot. Returns {action, id} or null. */
+/** The chips an item window shows: every slot, plus "on the belt". */
+const WINDOW_SLOTS = ["head", "chest", "hands", "legs", "feet", "shield", "weapon", "belt", "beltItems", "back", "jewelry"];
+const NEW_ITEM_TYPES = {armor: "AWAKENED.TypeArmor", attack: "AWAKENED.TypeWeapon", equipment: "AWAKENED.TypeEquipment", cypher: "AWAKENED.TypeBulan", artifact: "AWAKENED.TypeArtifact"};
+function defaultNewType(slot) {
+  if (["head", "chest", "hands", "legs", "feet", "shield"].includes(slot)) return "armor";
+  if (slot === "weapon") return "attack";
+  return "equipment";
+}
+
+/** Put one item into (or take it out of) one slot, then save. */
+async function setWorn(actor, slot, id, on) {
+  const eq = readEquip(actor);
+  const next = on ? equipRule(eq, slot, id, []) : unequipRule(eq, slot, id);
+  await saveEquip(actor, next);
+}
+
+/** Ask what goes into a slot: an item the character has, or a new one. */
 async function pickForSlot(actor, slot) {
-  const want = wantedSlot(slot);
   const eq = readEquip(actor);
   const current = MULTI_SLOTS.includes(slot) ? null : eq[slot];
-  const gear = actor.items.filter(i => GEAR_TYPES.includes(i.type) && !i.system?.archived)
-    .sort((a, b) => a.name.localeCompare(b.name));
-  if (!gear.length) {
-    ui.notifications.info(game.i18n.localize("AWAKENED.NoGear"));
-    return null;
-  }
   const taken = MULTI_SLOTS.includes(slot) ? new Set(eq[slot]) : new Set();
-  const fits = gear.filter(i => itemSlots(i).includes(want) && !taken.has(i.id));
-  const others = gear.filter(i => !itemSlots(i).includes(want) && !taken.has(i.id));
+  const gear = actor.items.filter(i => GEAR_TYPES.includes(i.type) && !i.system?.archived && !taken.has(i.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
   const esc = s => foundry.utils.escapeHTML ? foundry.utils.escapeHTML(s) : s;
+  const slotName = game.i18n.localize(SLOT_LABEL[slot]);
   const row = i => {
     const worn = wornSlotsOf(eq, i.id).filter(s => s !== slot).map(s => game.i18n.localize(SLOT_LABEL[s]));
     const note = [i.type === "armor" ? `${game.i18n.localize("AWAKENED.Armor")} ${i.system.basic.rating ?? 0}` : "",
@@ -404,20 +414,28 @@ async function pickForSlot(actor, slot) {
     return `<label class="ad-pick-row"><input type="radio" name="adPick" value="${i.id}" ${i.id === current ? "checked" : ""}/>
       <img src="${i.img}" width="26" height="26"/><span class="ad-pick-name">${esc(i.name)}</span><em>${note}</em></label>`;
   };
+  const types = Object.entries(NEW_ITEM_TYPES).map(([k, v]) =>
+    `<option value="${k}" ${k === defaultNewType(slot) ? "selected" : ""}>${game.i18n.localize(v)}</option>`).join("");
   let content = `<div class="ad-picker">`;
-  content += `<p class="ad-pick-cap">${game.i18n.format("AWAKENED.PickFits", {slot: game.i18n.localize(SLOT_LABEL[slot])})}</p>`;
-  content += fits.length ? fits.map(row).join("") : `<p class="ad-pick-none">${game.i18n.localize("AWAKENED.PickNoneFit")}</p>`;
-  if (others.length) {
-    content += `<details class="ad-pick-others"><summary>${game.i18n.localize("AWAKENED.PickOthers")}</summary>${others.map(row).join("")}</details>`;
-  }
+  content += `<div class="ad-pick-new"><p class="ad-pick-cap">${game.i18n.localize("AWAKENED.NewItemCap")}</p>
+    <div class="ad-pick-new-row"><input type="text" name="adNewName" placeholder="${game.i18n.localize("AWAKENED.NewItemName")}"/>
+    <select name="adNewType">${types}</select></div></div>`;
+  content += `<p class="ad-pick-cap">${game.i18n.localize("AWAKENED.PickExisting")}</p>`;
+  content += gear.length ? gear.map(row).join("") : `<p class="ad-pick-none">${game.i18n.localize("AWAKENED.PickNoItems")}</p>`;
   content += `</div>`;
-  const buttons = [{action: "equip", label: game.i18n.localize("AWAKENED.Equip"), icon: "fas fa-check", default: true,
-    callback: (event, button) => ({action: "equip", id: button.form?.elements?.adPick?.value || null})}];
+  const buttons = [
+    {action: "equip", label: game.i18n.localize("AWAKENED.Equip"), icon: "fas fa-check", default: true,
+      callback: (event, button) => {
+        const f = button.form?.elements;
+        const name = (f?.adNewName?.value ?? "").trim();
+        if (name) return {action: "new", name, type: f?.adNewType?.value || defaultNewType(slot)};
+        return {action: "equip", id: f?.adPick?.value || null};
+      }}
+  ];
   if (current) buttons.push({action: "empty", label: game.i18n.localize("AWAKENED.EmptySlot"), icon: "fas fa-eraser", callback: () => ({action: "empty"})});
   buttons.push({action: "cancel", label: game.i18n.localize("Cancel"), icon: "fas fa-xmark", callback: () => null});
-  const DialogV2 = foundry.applications.api.DialogV2;
-  const result = await DialogV2.wait({
-    window: {title: game.i18n.format("AWAKENED.PickTitle", {slot: game.i18n.localize(SLOT_LABEL[slot])})},
+  const result = await foundry.applications.api.DialogV2.wait({
+    window: {title: game.i18n.format("AWAKENED.PickTitle", {slot: slotName})},
     classes: ["awakened-dreaming-picker"],
     content, buttons, rejectClose: false
   });
@@ -427,18 +445,15 @@ async function pickForSlot(actor, slot) {
 async function equipFromPicker(actor, slot) {
   const res = await pickForSlot(actor, slot);
   if (!res) return;
-  const eq = readEquip(actor);
-  if (res.action === "empty") return saveEquip(actor, unequipRule(eq, slot));
-  if (res.action !== "equip" || !res.id) return;
-  const item = actor.items.get(res.id);
-  if (!item) return;
-  const want = wantedSlot(slot);
-  let slots = itemSlots(item);
-  if (!slots.includes(want)) {
-    slots = [...slots, want];
-    await item.update({[`flags.${MODULE_ID}.slots`]: slots});
+  if (res.action === "empty") return saveEquip(actor, unequipRule(readEquip(actor), slot));
+  if (res.action === "new") {
+    const [created] = await actor.createEmbeddedDocuments("Item", [{name: res.name, type: res.type}]);
+    if (!created) return;
+    await setWorn(actor, slot, created.id, true);
+    created.sheet?.render(true);
+    return;
   }
-  await saveEquip(actor, equipRule(eq, slot, item.id, slots));
+  if (res.action === "equip" && res.id && actor.items.get(res.id)) await setWorn(actor, slot, res.id, true);
 }
 
 /* House rule: armor's Speed cost only counts for classes the character isn't trained in. */
@@ -590,7 +605,9 @@ Hooks.on("renderRollEngineDialogSheet", (app, html) => {
   try { patchRollDialog(app, html); } catch (err) { console.error(`${MODULE_ID} | roll window`, err); }
 });
 
-/* Item windows: where it can be worn, and whether it's a Bulan (Active or Inactive). */
+/* Item windows: the body parts it's worn on (the same as page III, both ways) and whether it's
+   a Bulan (Active or Inactive). On an item that isn't on a character yet, the ticks are where
+   it goes when it's added to one. */
 Hooks.on("renderItemSheet", (app, html) => {
   const item = app.document ?? app.item ?? app.object;
   if (!item || !GEAR_TYPES.includes(item.type)) return;
@@ -599,17 +616,18 @@ Hooks.on("renderItemSheet", (app, html) => {
   const anchor = $html.find("header.sheet-header .header-fields").first();
   const target = anchor.length ? anchor : $html.find(".sheet-header").first();
   if (!target.length) return;
+  const actor = item.parent?.documentName === "Actor" && item.parent.type === "pc" ? item.parent : null;
   const disabled = app.isEditable === false ? "disabled" : "";
-  const slots = itemSlots(item);
+  const worn = actor ? wornSlotsOf(readEquip(actor), item.id) : itemSlots(item);
   const bul = isBulan(item);
   const act = isBulanActive(item);
-  const chips = ITEM_SLOT_CHOICES.map(s => `<label class="ad-gchip ${slots.includes(s) ? "on" : ""}">
-      <input type="checkbox" data-ad-item-slot="${s}" ${slots.includes(s) ? "checked" : ""} ${disabled}/>${game.i18n.localize(SLOT_LABEL[s])}</label>`).join("");
+  const chips = WINDOW_SLOTS.map(s => `<label class="ad-gchip ${worn.includes(s) ? "on" : ""}">
+      <input type="checkbox" data-ad-item-slot="${s}" ${worn.includes(s) ? "checked" : ""} ${disabled}/>${game.i18n.localize(SLOT_LABEL[s])}</label>`).join("");
   const box = $(`
     <div class="ad-gear-editor">
-      <div class="ad-gear-cap">${game.i18n.localize("AWAKENED.WornOn")}</div>
+      <div class="ad-gear-cap">${game.i18n.localize(actor ? "AWAKENED.WornOn" : "AWAKENED.WornOnLater")}</div>
       <div class="ad-gchips">${chips}</div>
-      <p class="ad-gear-hint">${game.i18n.localize("AWAKENED.WornOnHint")}</p>
+      <p class="ad-gear-hint">${game.i18n.localize(actor ? "AWAKENED.WornOnHint" : "AWAKENED.WornOnLaterHint")}</p>
       <div class="ad-gear-bulan ${bul ? "on" : ""}">
         <label class="ad-gear-bulan-tick"><input type="checkbox" data-ad-item-bulan ${bul ? "checked" : ""} ${disabled}/> <i class="fas fa-gem"></i> ${game.i18n.localize("AWAKENED.IsBulan")}</label>
         <span class="ad-gchips ad-bulan-state">
@@ -622,8 +640,11 @@ Hooks.on("renderItemSheet", (app, html) => {
   target.append(box);
   box.find("input").on("click change", ev => ev.stopPropagation());
   box.find("[data-ad-item-slot]").on("change", ev => {
-    const chosen = box.find("[data-ad-item-slot]:checked").map((_, el) => el.dataset.adItemSlot).get();
-    item.update({[`flags.${MODULE_ID}.slots`]: chosen});
+    const slot = ev.currentTarget.dataset.adItemSlot;
+    const on = ev.currentTarget.checked;
+    $(ev.currentTarget).closest(".ad-gchip").toggleClass("on", on);
+    if (actor) setWorn(actor, slot, item.id, on);
+    else item.update({[`flags.${MODULE_ID}.slots`]: box.find("[data-ad-item-slot]:checked").map((_, el) => el.dataset.adItemSlot).get()});
   });
   box.find("[data-ad-item-bulan]").on("change", ev => {
     const on = ev.currentTarget.checked;
@@ -632,6 +653,28 @@ Hooks.on("renderItemSheet", (app, html) => {
   box.find("[data-ad-item-bulan-state]").on("change", ev => {
     setBulanActive(item, ev.currentTarget.value === "active");
   });
+});
+
+/* When what's worn changes, refresh any open item windows of that character so their ticks match. */
+Hooks.on("updateActor", (actor, changes) => {
+  if (!foundry.utils.hasProperty(changes, `flags.${MODULE_ID}.equip`)) return;
+  for (const item of actor.items) if (item.sheet?.rendered) item.sheet.render(false);
+});
+
+/* An item added to a character that already has body parts ticked (for example from a compendium)
+   goes on those parts if they're free. */
+Hooks.on("createItem", async (item, options, userId) => {
+  if (userId !== game.user.id) return;
+  const actor = item.parent;
+  if (actor?.documentName !== "Actor" || actor.type !== "pc" || !GEAR_TYPES.includes(item.type)) return;
+  const slots = itemSlots(item);
+  if (!slots.length) return;
+  let eq = readEquip(actor);
+  let changed = false;
+  for (const s of slots) {
+    if (MULTI_SLOTS.includes(s) || !eq[s]) { eq = equipRule(eq, s, item.id, []); changed = true; }
+  }
+  if (changed) await saveEquip(actor, eq);
 });
 
 /* Cypher System character settings that contradict the house rules. Their rows are removed from
