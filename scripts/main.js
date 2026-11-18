@@ -634,6 +634,44 @@ Hooks.on("renderItemSheet", (app, html) => {
   });
 });
 
+/* Cypher System character settings that contradict the house rules. Their rows are removed from
+   the Settings tab, and characters that already changed them are put back. */
+const LOCKED_SETTINGS = {
+  "system.settings.general.gameMode": "Cypher",
+  "system.basic.unmaskedForm": "Mask",
+  "system.settings.general.additionalPool.active": false,
+  "system.settings.combat.stress.active": false,
+  "system.settings.combat.additionalStepDamageTrack.active": false,
+  "system.settings.combat.numberOneActionRecoveries": 1,
+  "system.settings.combat.numberTenMinuteRecoveries": 2,
+  "system.settings.combat.armor.active": true,
+  "system.settings.equipment.cyphers.active": true,
+  "system.settings.equipment.currency.active": false
+};
+const HIDDEN_SETTING_FIELDS = [
+  "system.settings.general.gameMode",
+  "system.settings.general.additionalPool.active",
+  "system.settings.general.additionalPool.hasEdge",
+  "system.settings.combat.stress.active",
+  "system.settings.combat.stress.supernaturalStressActive",
+  "system.settings.combat.additionalStepDamageTrack.active",
+  "system.settings.combat.numberOneActionRecoveries",
+  "system.settings.combat.numberTenMinuteRecoveries",
+  "system.settings.combat.armor.active",
+  "system.settings.equipment.cyphers.active",
+  "system.settings.equipment.currency.active",
+  "system.settings.equipment.currency.hideLabels",
+  "system.settings.equipment.currency.labelCategory1"
+];
+function lockedSettingsDiff(actor) {
+  const diff = {};
+  for (const [path, value] of Object.entries(LOCKED_SETTINGS)) {
+    const current = foundry.utils.getProperty(actor, path);
+    if (current !== undefined && current !== value) diff[path] = value;
+  }
+  return diff;
+}
+
 /** The ability's description for its chat card, always shown open. */
 async function chatDescription(item) {
   const raw = item?.system?.description ?? "";
@@ -1253,6 +1291,16 @@ Hooks.once("setup", () => {
         html.find(`[data-ad-page="${page}"]`).addClass("active");
         this._adSaveView({page});
       });
+
+      // Settings that contradict the house rules are taken off the Settings tab.
+      for (const name of HIDDEN_SETTING_FIELDS) {
+        html.find(`.tab.settings [name="${name}"]`).closest("li.item-settings").remove();
+      }
+      if (actor.isOwner && !this._adLockChecked) {
+        this._adLockChecked = true;
+        const diff = lockedSettingsDiff(actor);
+        if (Object.keys(diff).length) actor.update(diff);
+      }
 
       // Page III: Worn / Inventory
       html.find("[data-ad-gear-tab]").on("click", event => {
