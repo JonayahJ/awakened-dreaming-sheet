@@ -97,9 +97,10 @@
             <a class="item-control increase-xp" title="+1"><i class="fas fa-plus"></i></a>
           </span>
         </div>
-        <div class="ad-badge ad-badge-armor" title="{{ad.armor.costLabel}}">
+        <div class="ad-badge ad-badge-armor" title="{{ad.armor.costLabel}}{{#if ad.armor.temp}} · {{ad.armor.tempLabel}}{{/if}}">
           <span class="ad-badge-value">{{ad.armor.rating}}</span>
           <span class="ad-badge-label">{{localize 'AWAKENED.Armor'}}</span>
+          {{#if ad.armor.temp}}<span class="ad-badge-temp {{#if ad.armor.tempDown}}down{{/if}}">{{ad.armor.tempShort}}</span>{{/if}}
         </div>
       </div>
     {{/unless}}

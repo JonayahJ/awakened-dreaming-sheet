@@ -1,13 +1,19 @@
+{{#*inline "adCounters"}}
+  {{#if it.hp}}<span class="ad-mini-count"><a class="ad-rb" data-ad-item-step="hp" data-item-id="{{it.id}}" data-delta="-1"><i class="fas fa-minus"></i></a>{{localize 'AWAKENED.HP'}} <span class="ad-hpbar"><i style="width: {{it.hp.pct}}%"></i></span> {{it.hp.value}}/{{it.hp.max}}<a class="ad-rb" data-ad-item-step="hp" data-item-id="{{it.id}}" data-delta="1"><i class="fas fa-plus"></i></a></span>{{/if}}
+  {{#if it.charges}}<span class="ad-mini-count"><a class="ad-rb" data-ad-item-step="charges" data-item-id="{{it.id}}" data-delta="-1"><i class="fas fa-minus"></i></a><span class="ad-charge-pips">{{#each it.charges.pips}}<i class="{{#if on}}on{{/if}}"></i>{{/each}}</span> {{it.charges.value}}/{{it.charges.max}}<a class="ad-rb" data-ad-item-step="charges" data-item-id="{{it.id}}" data-delta="1"><i class="fas fa-plus"></i></a></span>{{/if}}
+{{/inline}}
 {{!-- ===================== PAGE III: EQUIPMENT ===================== --}}
 {{#*inline "adSlot"}}
-  <div class="ad-slot {{slot.css}}" data-ad-slot="{{slot.key}}" title="{{localize 'AWAKENED.SlotClick'}}">
+  <div class="ad-slot {{slot.css}} {{#if slot.item.broken}}broken{{/if}}" data-ad-slot="{{slot.key}}" title="{{localize 'AWAKENED.SlotClick'}}">
     <span class="ad-slot-name">{{slot.label}}</span>
     {{#if slot.item}}
       <span class="ad-slot-item">
         <a class="ad-slot-link" data-ad-open-item="{{slot.item.id}}">{{slot.item.name}}</a>
+        {{#if slot.item.broken}}<span class="ad-broken-tag">{{localize 'AWAKENED.Broken'}}</span>{{/if}}
         {{#if slot.item.bulan}}<a class="ad-bul-tog {{#if slot.item.bulanActive}}on{{/if}}" data-ad-bulan-toggle="{{slot.item.id}}" title="{{localize 'AWAKENED.BulanToggleHint'}}"><i class="fa-solid fa-gem"></i> {{#if slot.item.bulanActive}}{{localize 'AWAKENED.BulanActive'}}{{else}}{{localize 'AWAKENED.BulanInactive'}}{{/if}}</a>{{/if}}
       </span>
       <span class="ad-slot-meta">{{#if slot.item.ratingShown}}<b>{{slot.item.rating}}</b>{{/if}} {{slot.item.meta}}{{#if slot.item.speedCost}} · <span class="ad-warn">+{{slot.item.speedCost}} {{localize 'AWAKENED.SpeedCostShort'}}</span>{{/if}}</span>
+      {{#if (or slot.item.hp slot.item.charges)}}<span class="ad-slot-counts">{{> adCounters it=slot.item}}</span>{{/if}}
       <span class="ad-slot-x">
         <a data-ad-unslot="{{slot.key}}" data-item-id="{{slot.item.id}}" title="{{localize 'AWAKENED.EmptySlot'}}"><i class="fas fa-xmark"></i></a>
         {{#if slot.shared}}<a data-ad-unslot-all="{{slot.item.id}}" title="{{localize 'AWAKENED.TakeOffAll'}}"><i class="fas fa-angles-down"></i></a>{{/if}}
@@ -20,8 +26,11 @@
 {{#*inline "adChips"}}
   <span class="ad-jewel-list">
     {{#each list.items}}
-      <span class="ad-jewel {{#if bulan}}bulan{{/if}} {{#if bulanActive}}on{{/if}}">
+      <span class="ad-jewel {{#if bulan}}bulan{{/if}} {{#if bulanActive}}on{{/if}} {{#if broken}}broken{{/if}}">
         <a data-ad-open-item="{{id}}">{{name}}</a>
+        {{#if broken}}<span class="ad-broken-tag">{{localize 'AWAKENED.Broken'}}</span>{{/if}}
+        {{#if hp}}<span class="ad-chip-count">{{localize 'AWAKENED.HP'}} {{hp.value}}/{{hp.max}}</span>{{/if}}
+        {{#if charges}}<span class="ad-chip-count"><i class="fas fa-diamond"></i> {{charges.value}}/{{charges.max}}</span>{{/if}}
         {{#if bulan}}<a class="ad-chip-state" data-ad-bulan-toggle="{{id}}" title="{{localize 'AWAKENED.BulanToggleHint'}}"><i class="{{#if bulanActive}}fa-solid{{else}}fa-regular{{/if}} fa-gem"></i> {{#if bulanActive}}{{localize 'AWAKENED.BulanActive'}}{{else}}{{localize 'AWAKENED.BulanInactive'}}{{/if}}</a>{{/if}}
         <a class="ad-chip-x" data-ad-unslot="{{../list.key}}" data-item-id="{{id}}" title="{{localize 'AWAKENED.Remove'}}"><i class="fas fa-xmark"></i></a>
       </span>
@@ -60,6 +69,7 @@
             <span class="ad-slot-item"><a class="ad-slot-link" data-ad-slot="belt">{{ad.gear.slots.belt.item.name}}</a>
               {{#if ad.gear.slots.belt.item.bulan}}<a class="ad-bul-tog {{#if ad.gear.slots.belt.item.bulanActive}}on{{/if}}" data-ad-bulan-toggle="{{ad.gear.slots.belt.item.id}}"><i class="fa-solid fa-gem"></i> {{#if ad.gear.slots.belt.item.bulanActive}}{{localize 'AWAKENED.BulanActive'}}{{else}}{{localize 'AWAKENED.BulanInactive'}}{{/if}}</a>{{/if}}
             </span>
+            {{#if (or ad.gear.slots.belt.item.hp ad.gear.slots.belt.item.charges)}}<span class="ad-slot-counts">{{> adCounters it=ad.gear.slots.belt.item}}</span>{{/if}}
             <span class="ad-slot-x"><a data-ad-unslot="belt" data-item-id="{{ad.gear.slots.belt.item.id}}" title="{{localize 'AWAKENED.EmptySlot'}}"><i class="fas fa-xmark"></i></a></span>
           {{else}}
             <span class="ad-slot-item"><a class="ad-slot-link" data-ad-slot="belt">{{localize 'AWAKENED.Empty'}} <em>· {{localize 'AWAKENED.ClickToEquip'}}</em></a></span>
@@ -119,10 +129,20 @@
       <div class="ad-armor-total"><span class="n">{{ad.gear.armor.total}}</span><span class="l">{{localize 'AWAKENED.Armor'}}</span></div>
       <div class="ad-armor-lines">
         {{#each ad.gear.armor.lines}}
-          <div><b>{{name}}</b> {{rating}} <em>({{slots}}{{#if multi}} · {{localize 'AWAKENED.CountsOnce'}}{{/if}})</em></div>
+          <div class="{{#if broken}}muted{{/if}}"><b>{{name}}</b> {{rating}} <em>({{slots}}{{#if multi}} · {{localize 'AWAKENED.CountsOnce'}}{{/if}}{{#if broken}} · {{localize 'AWAKENED.Broken'}}{{/if}})</em></div>
         {{else}}
           <div class="muted"><em>{{localize 'AWAKENED.NoArmorWorn'}}</em></div>
         {{/each}}
+      </div>
+      <div class="ad-armor-temp">
+        <span class="ad-mini-title">{{localize 'AWAKENED.TempArmor'}}</span>
+        <span class="ad-temp-ctl">
+          <a class="ad-rb" data-ad-temp-armor="-1"><i class="fas fa-minus"></i></a>
+          <b class="{{#if (lt ad.gear.armor.temp.value 0)}}down{{/if}}">{{#if (gt ad.gear.armor.temp.value 0)}}+{{/if}}{{ad.gear.armor.temp.value}}</b>
+          <a class="ad-rb" data-ad-temp-armor="1"><i class="fas fa-plus"></i></a>
+          <a class="ad-icon-btn" data-ad-temp-armor="reset" title="{{localize 'AWAKENED.TempArmorReset'}}"><i class="fas fa-rotate"></i></a>
+        </span>
+        <input type="text" class="ad-temp-note" name="{{ad.gear.armor.tempPath}}.note" value="{{ad.gear.armor.temp.note}}" placeholder="{{localize 'AWAKENED.TempArmorNote'}}" />
       </div>
       <div class="ad-armor-train">
         <span class="ad-mini-title">{{localize 'AWAKENED.TrainedIn'}}</span>

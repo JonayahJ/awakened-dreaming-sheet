@@ -497,19 +497,48 @@ async function moveItemKind(actor, item) {
   created.sheet?.render(true);
 }
 
-/* House rule: armor's Speed cost only counts for classes the character isn't trained in. */
-function adjustArmorCost(actor) {
+/* Item condition: optional HP and charges, and a Broken state (0 HP breaks an item). */
+function itemCond(item) {
+  const f = item?.flags?.[MODULE_ID] ?? {};
+  const num = v => Math.max(0, Number(v) || 0);
+  const hp = f.hp?.on ? {value: num(f.hp.value), max: num(f.hp.max)} : null;
+  const charges = f.charges?.on ? {value: num(f.charges.value), max: num(f.charges.max)} : null;
+  return {hp, charges, recharge: f.recharge ?? "", broken: !!f.broken};
+}
+function isBroken(item) {
+  return !!item?.flags?.[MODULE_ID]?.broken;
+}
+/** Step an item's HP or charges. Reaching 0 HP marks the item Broken. */
+async function stepItemCounter(item, kind, delta) {
+  const c = itemCond(item)[kind];
+  if (!c) return;
+  let v = c.value + delta;
+  v = Math.max(0, c.max > 0 ? Math.min(v, c.max) : v);
+  const upd = {[`flags.${MODULE_ID}.${kind}.value`]: v};
+  if (kind === "hp" && v <= 0) upd[`flags.${MODULE_ID}.broken`] = true;
+  return item.update(upd);
+}
+
+/* Armor total, recomputed after the Cypher System's own: broken armor gives no armor, trained
+   classes have no Speed cost, and the character's temporary armor (plus or minus) is added. */
+function armorTemp(actor) {
+  const t = actor?.flags?.[MODULE_ID]?.armorTemp ?? {};
+  return {value: Number(t.value) || 0, note: t.note ?? ""};
+}
+function adjustArmor(actor) {
   if (actor?.type !== "pc") return;
   const training = armorTraining(actor);
-  if (!training.light && !training.medium && !training.heavy) return;
-  let cost = 0;
+  let rating = 0, cost = 0;
   for (const piece of actor.items) {
     if (piece.type !== "armor" || piece.system.active !== true || piece.system.archived !== false) continue;
     if (piece.system.settings?.general?.unmaskedForm === "Teen") continue;
+    if (isBroken(piece)) continue;
+    rating += Number(piece.system.basic.rating) || 0;
     const cls = armorClass(piece);
     if (cls && training[cls]) continue;
     cost += Number(parseInt(piece.system.basic.cost ?? 0, 10)) || 0;
   }
+  actor.system.combat.armor.ratingTotal = Math.max(0, rating + armorTemp(actor).value);
   actor.system.combat.armor.costTotal = cost;
 }
 
@@ -536,15 +565,20 @@ function buildGearData(actor) {
     if (item.type === "equipment" && Number(item.system.basic.quantity) > 1) meta.push(`× ${item.system.basic.quantity}`);
     const bulan = isBulan(item);
     if (bulan) meta.push(loc("AWAKENED.Bulan"));
+    const cond = itemCond(item);
+    if (cond.broken && item.type === "armor") meta.unshift(loc("AWAKENED.NoArmorBroken"));
     return {
+      hp: cond.hp ? {...cond.hp, pct: cond.hp.max ? Math.round(100 * Math.min(cond.hp.value, cond.hp.max) / cond.hp.max) : 0} : null,
+      charges: cond.charges ? {...cond.charges, pips: Array.from({length: Math.min(cond.charges.max, 12)}, (_, i) => ({on: i < cond.charges.value}))} : null,
+      broken: cond.broken,
       id: item.id, name: item.name, img: item.img, rating, isArmor: item.type === "armor",
-      ratingShown: item.type === "armor" && rating > 0,
+      ratingShown: item.type === "armor" && rating > 0 && !isBroken(item),
       speedCost: untrainedCost ? cost : 0,
       meta: meta.filter(Boolean).join(" · "),
       bulan, bulanActive: isBulanActive(item)
     };
   };
-  const slotCss = v => !v ? "empty" : v.bulan ? (v.bulanActive ? "bulan" : "bulan-off") : v.ratingShown ? "armor" : "gear";
+  const slotCss = v => !v ? "empty" : v.broken ? "broken" : v.bulan ? (v.bulanActive ? "bulan" : "bulan-off") : v.ratingShown ? "armor" : "gear";
   const single = s => {
     const v = view(actor.items.get(eq[s]));
     const shared = v ? SINGLE_SLOTS.filter(o => o !== s && eq[o] === v.id).length > 0 : false;
@@ -581,8 +615,8 @@ function buildGearData(actor) {
     const item = actor.items.get(id);
     if (item?.type !== "armor") continue;
     const v = view(item);
-    speedCost += v.speedCost;
-    wornArmor.push({name: v.name, rating: v.rating, speedCost: v.speedCost,
+    if (!v.broken) speedCost += v.speedCost;
+    wornArmor.push({name: v.name, rating: v.broken ? 0 : v.rating, broken: v.broken, speedCost: v.speedCost,
       slots: wornSlotsOf(eq, id).map(s => loc(SLOT_LABEL[s])).join(", "),
       multi: wornSlotsOf(eq, id).length > 1});
   }
@@ -591,6 +625,7 @@ function buildGearData(actor) {
   return {
     slots, lists, spots,
     armor: {total: actor.system.combat.armor.ratingTotal ?? 0, lines: wornArmor, speedCost, training,
+      temp: armorTemp(actor), tempPath: `${FLAG}.armorTemp`,
       trainingPath: `${FLAG}.armorTraining`},
     bulans: counts
   };
@@ -677,6 +712,27 @@ Hooks.on("renderItemSheet", (app, html) => {
         </span>
         <p class="ad-gear-hint">${game.i18n.localize("AWAKENED.BulanHint")}</p>
       </div>
+      <div class="ad-gear-cond">
+        <div class="ad-gear-cap">${game.i18n.localize("AWAKENED.Condition")}</div>
+        ${["hp", "charges"].map(k => {
+          const c = itemCond(item)[k];
+          return `<div class="ad-cond-line">
+            <label class="ad-cond-tick"><input type="checkbox" data-ad-cond-on="${k}" ${c ? "checked" : ""} ${disabled}/> ${game.i18n.localize(k === "hp" ? "AWAKENED.HasHP" : "AWAKENED.HasCharges")}</label>
+            ${c ? `<a class="ad-rb" data-ad-cond-step="${k}" data-delta="-1"><i class="fas fa-minus"></i></a>
+              <input type="number" min="0" data-ad-cond-val="${k}.value" value="${c.value}" ${disabled}/> /
+              <input type="number" min="0" data-ad-cond-val="${k}.max" value="${c.max}" ${disabled}/>
+              <a class="ad-rb" data-ad-cond-step="${k}" data-delta="1"><i class="fas fa-plus"></i></a>` : ""}
+          </div>`;
+        }).join("")}
+        ${itemCond(item).charges ? `<div class="ad-cond-line"><label class="ad-cond-tick">${game.i18n.localize("AWAKENED.Recharges")}</label>
+          <input type="text" class="ad-cond-text" data-ad-cond-recharge value="${(itemCond(item).recharge || "").replace(/"/g, "&quot;")}" placeholder="${game.i18n.localize("AWAKENED.RechargesHint")}" ${disabled}/></div>` : ""}
+        <div class="ad-cond-line"><label class="ad-cond-tick">${game.i18n.localize("AWAKENED.State")}</label>
+          <span class="ad-gchips">
+            <label class="ad-gchip ok ${!itemCond(item).broken ? "on" : ""}"><input type="radio" name="adBroken-${item.id}" value="0" data-ad-broken ${!itemCond(item).broken ? "checked" : ""} ${disabled}/>${game.i18n.localize("AWAKENED.Working")}</label>
+            <label class="ad-gchip br ${itemCond(item).broken ? "on" : ""}"><input type="radio" name="adBroken-${item.id}" value="1" data-ad-broken ${itemCond(item).broken ? "checked" : ""} ${disabled}/>${game.i18n.localize("AWAKENED.Broken")}</label>
+          </span></div>
+        <p class="ad-gear-hint">${game.i18n.localize(item.type === "armor" ? "AWAKENED.BrokenHintArmor" : "AWAKENED.BrokenHint")}</p>
+      </div>
     </div>`);
   target.append(box);
   box.find("input").on("click change", ev => ev.stopPropagation());
@@ -694,6 +750,24 @@ Hooks.on("renderItemSheet", (app, html) => {
   box.find("[data-ad-item-bulan-state]").on("change", ev => {
     setBulanActive(item, ev.currentTarget.value === "active");
   });
+  box.find("[data-ad-cond-on]").on("change", ev => {
+    const k = ev.currentTarget.dataset.adCondOn;
+    const cur = item.flags?.[MODULE_ID]?.[k] ?? {};
+    item.update({[`flags.${MODULE_ID}.${k}`]: {on: ev.currentTarget.checked, value: cur.value ?? 0, max: cur.max ?? 0}});
+  });
+  box.find("[data-ad-cond-val]").on("change", ev => {
+    const path = ev.currentTarget.dataset.adCondVal;
+    const v = Math.max(0, Number(ev.currentTarget.value) || 0);
+    const upd = {[`flags.${MODULE_ID}.${path}`]: v};
+    if (path === "hp.value" && v <= 0) upd[`flags.${MODULE_ID}.broken`] = true;
+    item.update(upd);
+  });
+  box.find("[data-ad-cond-step]").on("click", ev => {
+    ev.preventDefault();
+    stepItemCounter(item, ev.currentTarget.dataset.adCondStep, Number(ev.currentTarget.dataset.delta) || 0);
+  });
+  box.find("[data-ad-cond-recharge]").on("change", ev => item.update({[`flags.${MODULE_ID}.recharge`]: ev.currentTarget.value}));
+  box.find("[data-ad-broken]").on("change", ev => item.update({[`flags.${MODULE_ID}.broken`]: ev.currentTarget.value === "1"}));
 });
 
 /* When what's worn changes, refresh any open item windows of that character so their ticks match. */
@@ -1407,6 +1481,42 @@ Hooks.once("setup", () => {
         });
       }
 
+      // Item HP and charges, right on page III.
+      html.find("[data-ad-item-step]").on("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!this.isEditable) return;
+        const {adItemStep, itemId, delta} = event.currentTarget.dataset;
+        const item = actor.items.get(itemId);
+        if (item) stepItemCounter(item, adItemStep, Number(delta) || 0);
+      });
+      // Equipment tab rows: HP, charges and Broken next to each item.
+      html.find(".ad-pane-inventory li.item[data-item-id]").each((_, li) => {
+        const item = actor.items.get(li.dataset.itemId);
+        if (!item || !GEAR_TYPES.includes(item.type)) return;
+        const c = itemCond(item);
+        if (!c.hp && !c.charges && !c.broken) return;
+        const btn = (k, d) => this.isEditable ? `<a class="ad-rb" data-k="${k}" data-d="${d}"><i class="fas fa-${d > 0 ? "plus" : "minus"}"></i></a>` : "";
+        const parts = [];
+        if (c.broken) parts.push(`<span class="ad-broken-tag">${game.i18n.localize("AWAKENED.Broken")}</span>`);
+        if (c.hp) parts.push(`<span class="ad-row-count">${btn("hp", -1)}${game.i18n.localize("AWAKENED.HP")} ${c.hp.value}/${c.hp.max}${btn("hp", 1)}</span>`);
+        if (c.charges) parts.push(`<span class="ad-row-count charges">${btn("charges", -1)}<i class="fas fa-diamond"></i> ${c.charges.value}/${c.charges.max}${btn("charges", 1)}</span>`);
+        const el = $(`<span class="ad-row-cond">${parts.join("")}</span>`);
+        el.find("[data-k]").on("click", ev => { ev.preventDefault(); ev.stopPropagation(); stepItemCounter(item, ev.currentTarget.dataset.k, Number(ev.currentTarget.dataset.d)); });
+        const name = $(li).find(".item-name").first();
+        if (name.length) name.after(el); else $(li).prepend(el);
+        if (c.broken) $(li).addClass("ad-item-broken");
+      });
+      // Temporary armor (abilities that add armor, spells that reduce it).
+      html.find("[data-ad-temp-armor]").on("click", event => {
+        event.preventDefault();
+        if (!this.isEditable) return;
+        const step = event.currentTarget.dataset.adTempArmor;
+        const cur = armorTemp(actor);
+        if (step === "reset") actor.update({[`${FLAG}.armorTemp`]: {value: 0, note: ""}});
+        else actor.update({[`${FLAG}.armorTemp.value`]: cur.value + (Number(step) || 0)});
+      });
+
       // Worn slots: click a slot (or its dot on the figure) to choose what goes there.
       html.find("[data-ad-slot]").on("click", event => {
         event.preventDefault();
@@ -1568,7 +1678,7 @@ Hooks.once("setup", () => {
     const origDerived = ActorDoc.prototype.prepareDerivedData;
     ActorDoc.prototype.prepareDerivedData = function (...args) {
       const out = origDerived.apply(this, args);
-      try { adjustArmorCost(this); } catch (err) { console.error(`${MODULE_ID} | armor cost`, err); }
+      try { adjustArmor(this); } catch (err) { console.error(`${MODULE_ID} | armor cost`, err); }
       return out;
     };
   }
@@ -1947,7 +2057,11 @@ function buildSheetData(actor, data) {
     armor: {
       rating: sys.combat.armor.ratingTotal ?? 0,
       cost: sys.combat.armor.costTotal ?? 0,
-      costLabel: game.i18n.format("AWAKENED.ArmorCost", {cost: sys.combat.armor.costTotal ?? 0})
+      costLabel: game.i18n.format("AWAKENED.ArmorCost", {cost: sys.combat.armor.costTotal ?? 0}),
+      temp: armorTemp(actor).value,
+      tempDown: armorTemp(actor).value < 0,
+      tempShort: `${armorTemp(actor).value > 0 ? "+" : ""}${armorTemp(actor).value} ${game.i18n.localize("AWAKENED.TempShort")}`,
+      tempLabel: game.i18n.format("AWAKENED.TempArmorLabel", {value: `${armorTemp(actor).value > 0 ? "+" : ""}${armorTemp(actor).value}`, note: armorTemp(actor).note || ""})
     },
     advancement,
     additionalSentence

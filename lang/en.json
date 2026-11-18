@@ -239,5 +239,22 @@
   "AWAKENED.MoveTo": "Move {name} to:",
   "AWAKENED.Move": "Move",
   "AWAKENED.MoveHint": "It keeps its name, picture, description, price, Bulan state and where it's worn. Numbers that belong to one kind of item (armor rating, damage, level) start fresh, so open it afterward to fill them in.",
-  "AWAKENED.TypeOddity": "Oddity"
+  "AWAKENED.TypeOddity": "Oddity",
+  "AWAKENED.Condition": "Condition",
+  "AWAKENED.HasHP": "Has HP",
+  "AWAKENED.HasCharges": "Has charges",
+  "AWAKENED.HP": "HP",
+  "AWAKENED.Recharges": "Recharges",
+  "AWAKENED.RechargesHint": "e.g. 1 charge each Long Rest",
+  "AWAKENED.State": "State",
+  "AWAKENED.Working": "Working",
+  "AWAKENED.Broken": "Broken",
+  "AWAKENED.BrokenHint": "At 0 HP the item breaks. Set it back to Working once it's repaired.",
+  "AWAKENED.BrokenHintArmor": "At 0 HP the item breaks, and broken armor gives no armor. Set it back to Working once it's repaired.",
+  "AWAKENED.NoArmorBroken": "No armor while broken",
+  "AWAKENED.TempArmor": "Temporary",
+  "AWAKENED.TempArmorNote": "Why? (e.g. Stone Skin +2, Rust spell −1)",
+  "AWAKENED.TempArmorReset": "Clear temporary armor",
+  "AWAKENED.TempShort": "temp",
+  "AWAKENED.TempArmorLabel": "Includes {value} temporary armor {note}"
 }
