@@ -162,8 +162,8 @@ async function resolvePayment(actor, net) {
    Impaired group: any mix can be on. Debilitated group: any mix can be on, and while any is on
    the Impaired ones are switched off and held; they come back when the last Debilitated one clears. */
 const CONDITIONS = {
-  impaired: ["impaired", "hindered", "slowed"],
-  debilitated: ["immobile", "debilitated", "unconscious"]
+  impaired: ["impaired", "slowed", "hindered"],
+  debilitated: ["debilitated", "immobile", "unconscious"]
 };
 const CONDITION_KEYS = [...CONDITIONS.impaired, ...CONDITIONS.debilitated];
 const CONDITION_LABEL = {
